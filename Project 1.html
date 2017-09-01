@@ -2,8 +2,93 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title></title>
+    <title>CMP SCI 4340 - Project #1 - Perceptron Learning Algorithm</title>
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" href="./styles.css"/>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+    <script src="./src/main.js"></script>
 </head>
-<body>
+<body onload="setupPage();" onresize="sizeCanvas();">
+<div class="container-fluid">
+    <div class="row">
+        <div class="bordered col-md-10 col-md-offset-1">
+            <div class="row">
+                <div class="col-md-12">
+                    <h3 class="center-me">CMP SCI 4340 - Project #1 - Perceptron Learning Algorithm</h3>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="row">
+                        <div id="pla-simulator-wrapper" class="col-md-12">
+                            <p>The "Perceptron Learning Algorithm Simulation Canvas" element could not be loaded.</p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <button id="pla-simulator-run-button" class="bordered max-width btn" onclick="runPLASimulator()" disabled="disabled">Run</button>
+                        </div>
+                        <div class="bordered col-md-6">
+                            <div id="status-wrapper">Status</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="row">
+                        <div class="bordered col-md-12">
+                            <h4 class="center-me">Parameters</h4>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p>Classes</p>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <p>Class 1</p>
+                                            <label for="class-A-symbol">Symbol</label>
+                                            <input id="class-A-symbol" name="class-A-symbol" type="text" value="+"/>
+                                            <label for="class-A-color">Color</label>
+                                            <input id="class-A-color" name="class-A-color" type="color" value="#00ff00"/>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p>Class 2</p>
+                                        <label for="class-B-symbol">Symbol</label>
+                                        <input id="class-B-symbol" name="class-B-symbol" type="text" value="-"/>
+                                        <label for="class-B-color">Color</label>
+                                        <input id="class-B-color" name="class-B-color" type="color" value="#ff0000"/>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <p>Data</p>
+                                    <form id="data-input-selection-form">
+                                        <input type="radio" name="data-input-method" value="preset" checked="checked" onclick="fillDataInputWrapper();"/> Preset
+                                        <input type="radio" name="data-input-method" value="manual" onclick="fillDataInputWrapper();"/> Manual
+                                        <input type="radio" name="data-input-method" value="file" onclick="fillDataInputWrapper();"/> File
+                                    </form>
+                                    <div id="data-input-wrapper"></div>
+                                    <button id="confirm-data" onclick="loadData()">Choose This Data</button>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="bordered col-md-12">
+                            <h4 class="center-me">Details</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="bordered col-md-12">
+                    History
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 </body>
 </html>
