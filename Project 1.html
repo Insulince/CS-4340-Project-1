@@ -11,8 +11,10 @@
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
 
     <script src="./src/main.js"></script>
+    <script src="./src/canvas-controller.js"></script>
+    <script src="./src/util.js"></script>
 </head>
-<body onload="setupPage();" onresize="sizeCanvas();">
+<body onload="setupPage(); resize();" onresize="resize();">
 <div class="container-fluid">
     <div class="row">
         <div class="bordered col-md-10 col-md-offset-1">
@@ -25,7 +27,7 @@
                 <div class="col-md-6">
                     <div class="row">
                         <div id="pla-simulator-wrapper" class="col-md-12">
-                            <p>The "Perceptron Learning Algorithm Simulation Canvas" element could not be loaded.</p>
+                            <canvas id="pla-simulator" class="bordered"></canvas>
                         </div>
                     </div>
                     <div class="row">
@@ -69,7 +71,7 @@
                                         <input type="radio" name="data-input-method" value="file" onclick="fillDataInputWrapper();"/> File
                                     </form>
                                     <div id="data-input-wrapper"></div>
-                                    <button id="confirm-data" onclick="loadData()">Choose This Data</button>
+                                    <button id="confirm-data" onclick="loadInputDataIntoPLASimulator()">Choose This Data</button>
                                 </div>
                             </div>
 

@@ -1,44 +1,40 @@
 "use strict";
 
+//TODO: Expand
+const PRESET_DATA = [
+    "TRAIN: (A, 0, 0); TEST: (0, 0)"
+];
+const INPUT_DATA_FORMAT_REGEX = /^ *TRAIN(ING)? *(DATA)? *: *((\( *[AB] *, *-?\d+ *, *-?\d+ *\) *)+) *; *TEST(ING)? *(DATA)? *: *((\( *-?\d+ *, *-?\d+ *\) *)+) *$/g;
+
+let canvasController = undefined;
+
+let inputData = undefined;
+
 function setupPage() {
-    sizeCanvas();
+    generateRandomTestData();
+
+    canvasController = new CanvasController(document.getElementById("pla-simulator"));
+    drawBasePLASimulatorElements();
+    disableRunPLASimulatorButton();
     fillDataInputWrapper();
 }
 
-function sizeCanvas() {
-    let PLASimulatorWrapper = document.getElementById("pla-simulator-wrapper");
+function resize() {
+    canvasController.resize(canvasController.canvas.parentElement.offsetWidth, canvasController.canvas.parentElement.offsetWidth);
 
-    console.log(PLASimulatorWrapper.offsetWidth);
-    let PLASimulatorWrapperWidth = parseInt(PLASimulatorWrapper.offsetWidth);
-
-    PLASimulatorWrapper.innerHTML = `
-        <canvas id="pla-simulator" class="bordered" width="` + PLASimulatorWrapperWidth + `" height="` + PLASimulatorWrapperWidth + `"></canvas>
-    `;
-
-    setCanvasAxes();
-
-    disableRunPLASimulatorButton();
+    drawBasePLASimulatorElements();
+    displayInputDataOnCanvas();
 }
 
-function setCanvasAxes() {
-    let PLASimulator = document.getElementById("pla-simulator");
-    let ctx = PLASimulator.getContext('2d');
-
-    ctx.strokeStyle = "#aaaaaa";
-
-    ctx.beginPath();
-    ctx.moveTo(PLASimulator.width / 2, 0);
-    ctx.lineTo(PLASimulator.width / 2, PLASimulator.height);
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(0, PLASimulator.height / 2);
-    ctx.lineTo(PLASimulator.width, PLASimulator.height / 2);
-    ctx.stroke();
+function drawBasePLASimulatorElements() {
+    drawPLASimulatorAxes();
 }
 
-function runPLASimulator() {
+function drawPLASimulatorAxes() {
+    canvasController.setStrokeStyle("#aaaaaa");
 
+    canvasController.drawLineViaFromTo(canvasController.leftMiddleCoordinate, canvasController.rightMiddleCoordinate);
+    canvasController.drawLineViaFromTo(canvasController.centerTopCoordinate, canvasController.centerBottomCoordinate);
 }
 
 function enableRunPLASimulatorButton() {
@@ -60,9 +56,8 @@ function disableRunPLASimulatorButton() {
 }
 
 function fillDataInputWrapper() {
-    let selectedInputMethod = $('input[name=data-input-method]:checked', '#data-input-selection-form').val();
-
     let dataInputWrapper = $("#data-input-wrapper");
+    let selectedInputMethod = $('input[name=data-input-method]:checked', '#data-input-selection-form').val();
 
     switch (selectedInputMethod) {
         case "preset":
@@ -81,7 +76,7 @@ function fillDataInputWrapper() {
 }
 
 function getPresetHTML() {
-    return ``;
+    return ``; //TODO
 }
 
 function getManualHTML() {
@@ -92,206 +87,232 @@ function getFileHTML() {
     return `<input id="file-data-input" type="file" accept=".txt"/>`;
 }
 
-//TODO: Expand
-let PRESET_DATA = [
-    "TRAIN: (A, 0, 0); TEST: (0, 0)"
-];
+function loadInputDataIntoPLASimulator() {
+    retrieveInputDataFromInputMethod().then(
+        (fetchedData) => {
+            if (validInputData(fetchedData)) {
+                //TODO Instantiate the future PLA object here?
+                inputData = fetchedData;
 
-function loadData() {
-    let data;
+                canvasController.clear();
+                drawBasePLASimulatorElements();
 
-    fetchData().then(
-        (contents) => {
-            data = contents;
-
-            if (validData(data)) {
-                loadDataToCanvas(data);
+                displayInputDataOnCanvas();
                 enableRunPLASimulatorButton();
             } else {
+                inputData = undefined;
+
+                alert("Invalid data!"); //TODO?
                 disableRunPLASimulatorButton();
-                alert("Invalid data!")
             }
+        }
+    ).catch(
+        () => {
+            //TODO
         }
     );
 }
 
-function loadDataToCanvas(data) {
-    let regexResult = /^ *TRAIN *: *((\( *[AB] *, *-?\d+ *, *-?\d+ *\) *)+) *; *TEST *: *((\( *-?\d+ *, *-?\d+ *\) *)+) *$/g.exec(data);
-    let trainingData = regexResult[1].replace(/\s+/g, '').substring(1).slice(0, -1).split(")(").map(
-        (trainingDatum) => {
-            return trainingDatum.split(",");
-        }
-    );
-    let testData = regexResult[3].replace(/\s+/g, '').substring(1).slice(0, -1).split(")(").map(
-        (testDatum) => {
-            return testDatum.split(",");
-        }
-    );
-
-
-    let maxX = -Infinity;
-    let minX = Infinity;
-    let maxY = -Infinity;
-    let minY = Infinity;
-    trainingData.forEach(
-        (trainingDatum) => {
-            if (trainingDatum[1] > maxX) {
-                maxX = trainingDatum[1];
-            }
-            if (trainingDatum[1] < minX) {
-                minX = trainingDatum[1];
-            }
-            if (trainingDatum[2] > maxY) {
-                maxY = trainingDatum[2];
-            }
-            if (trainingDatum[2] < minY) {
-                minY = trainingDatum[2];
-            }
-        }
-    );
-    testData.forEach(
-        (testDatum) => {
-            if (testDatum[0] > maxX) {
-                maxX = testDatum[0];
-            }
-            if (testDatum[0] < minX) {
-                minX = testDatum[0];
-            }
-            if (testDatum[1] > maxY) {
-                maxY = testDatum[1];
-            }
-            if (testDatum[1] < minY) {
-                minY = testDatum[1];
-            }
-        }
-    );
-
-    let axisXLimit;
-    let axisXLimitNeg;
-    let axisYLimit;
-    let axisYLimitNeg;
-    if (Math.abs(maxX) >= Math.abs(minX)) {
-        axisXLimit = Math.abs(maxX);
-    } else {
-        axisXLimit = Math.abs(minX);
-    }
-    axisXLimitNeg = -axisXLimit;
-
-    if (Math.abs(maxY) >= Math.abs(minY)) {
-        axisYLimit = Math.abs(maxY);
-    } else {
-        axisYLimit = Math.abs(minY);
-    }
-    axisYLimitNeg = -axisYLimit;
-    
-    let displayedAxisXLimit = Math.ceil(axisXLimit * 1.1);
-    let displayedAxisXLimitNeg = Math.floor(axisXLimitNeg * 1.1);
-    let displayedAxisYLimit = Math.ceil(axisYLimit * 1.1);
-    let displayedAxisYLimitNeg = Math.floor(axisYLimitNeg * 1.1);
-    
-    
-    
-    let PLASimulator = document.getElementById("pla-simulator");
-    let ctx = PLASimulator.getContext('2d');
-
-    ctx.font = "14px sans-serif";
-    ctx.strokeStyle = "#cccccc";
-
-    ctx.strokeText("0", PLASimulator.width / 2 + 5, PLASimulator.height / 2 - 5);
-    ctx.strokeText(displayedAxisXLimit, PLASimulator.width - 35, PLASimulator.height / 2 - 5);
-    ctx.strokeText(displayedAxisXLimitNeg, 3, PLASimulator.height / 2 - 5);
-    ctx.strokeText(displayedAxisYLimit, PLASimulator.width / 2 + 5, 20);
-    ctx.strokeText(displayedAxisYLimitNeg, PLASimulator.width / 2 + 5, PLASimulator.height - 10);
-
-    let widthToPixelRatio = PLASimulator.width / (displayedAxisXLimit * 2);
-    let heightToPixelRatio = PLASimulator.height / (displayedAxisYLimit * 2);
-
-    if (widthToPixelRatio === Infinity) {
-        widthToPixelRatio = 0;
-    }
-    if (heightToPixelRatio === Infinity) {
-        heightToPixelRatio = 0;
-    }
-
-    console.log(widthToPixelRatio);
-    console.log(heightToPixelRatio);
-
-    trainingData.forEach(
-        (trainingDatum) => {
-            let symbol;
-            let color;
-
-            if (trainingDatum[0] === "A") {
-                symbol = $("#class-A-symbol").val();
-                color = $("#class-A-color").val();
-            } else {
-                symbol = $("#class-B-symbol").val();
-                color = $("#class-B-color").val();            }
-
-            ctx.strokeStyle = color;
-            ctx.strokeText(symbol, (PLASimulator.width / 2) + (widthToPixelRatio * trainingDatum[1]) - 3, (PLASimulator.height / 2) - (heightToPixelRatio * trainingDatum[2]) + 4);
-        }
-    );
-
-    //line length = sqrt(2) * PLASimulator.width / 2
-}
-
-function validData(data) {
-    return /^ *TRAIN *: *((\( *[AB] *, *-?\d+ *, *-?\d+ *\) *)+) *; *TEST *: *((\( *-?\d+ *, *-?\d+ *\) *)+) *$/g.exec(data);
-}
-
-function fetchData() {
+function retrieveInputDataFromInputMethod() {
     return new Promise(
         (resolve, reject) => {
             let selectedInputMethod = $('input[name=data-input-method]:checked', '#data-input-selection-form').val();
 
             switch (selectedInputMethod) {
                 case "preset":
-                    resolve(PRESET_DATA[getSelectedPresetIndex()]);
+                    resolve(getSelectedDataInputPresetContents());
                     break;
                 case "manual":
-                    resolve($("#manual-data-input").val());
+                    resolve(getManualDataInputContents());
                     break;
                 case "file":
-                    getContentsOfFile().then(
+                    getDataInputFileContents().then(
                         (contents) => {
                             resolve(contents);
+                        }
+                    ).catch(
+                        () => {
+                            reject(); //TODO
                         }
                     );
                     break;
                 default:
-                    //TODO
+                    reject(); //TODO
                     break;
             }
         }
     );
-
 }
 
+function validInputData(inputData) {
+    return resetRegularExpression(INPUT_DATA_FORMAT_REGEX).exec(inputData);
+}
+
+function getSelectedDataInputPresetContents() {
+    return PRESET_DATA[getSelectedDataInputPresetIndex()];
+}
 
 //TODO: Implement
-function getSelectedPresetIndex() {
+function getSelectedDataInputPresetIndex() {
     return 0;
 }
 
-function getContentsOfFile() {
+function getManualDataInputContents() {
+    return $("#manual-data-input").val();
+}
+
+function getDataInputFileContents() {
     return new Promise(
         (resolve, reject) => {
             let file = $("#file-data-input")[0].files[0];
-
             let fr = new FileReader();
-
             let contents = "";
 
             fr.onload = () => {
                 contents += fr.result;
             };
-
             fr.onloadend = () => {
                 resolve(contents);
+            };
+            fr.onerror = (error) => {
+                reject(error);
             };
 
             fr.readAsText(file);
         }
     );
+}
+
+function displayInputDataOnCanvas() {
+    if (inputData) {
+        let regexResult = resetRegularExpression(INPUT_DATA_FORMAT_REGEX).exec(inputData);
+
+        let trainingData = regexResult[3].replace(/\s+/g, '').substring(1).slice(0, -1).split(")(").map(
+            (trainingDatum) => {
+                return trainingDatum.split(",");
+            }
+        );
+        trainingData.forEach(
+            (trainingDatum) => {
+                trainingDatum[1] = parseInt(trainingDatum[1]);
+                trainingDatum[2] = parseInt(trainingDatum[2]);
+            }
+        );
+        let testData = regexResult[7].replace(/\s+/g, '').substring(1).slice(0, -1).split(")(").map(
+            (testDatum) => {
+                return testDatum.split(",");
+            }
+        );
+        testData.forEach(
+            (testDatum) => {
+                testDatum[0] = parseInt(testDatum[0]);
+                testDatum[1] = parseInt(testDatum[1]);
+            }
+        );
+
+        let maxX = -Infinity;
+        let minX = Infinity;
+        let maxY = -Infinity;
+        let minY = Infinity;
+        trainingData.forEach(
+            (trainingDatum) => {
+                if (trainingDatum[1] > maxX) {
+                    maxX = trainingDatum[1];
+                }
+                if (trainingDatum[1] < minX) {
+                    minX = trainingDatum[1];
+                }
+                if (trainingDatum[2] > maxY) {
+                    maxY = trainingDatum[2];
+                }
+                if (trainingDatum[2] < minY) {
+                    minY = trainingDatum[2];
+                }
+            }
+        );
+        testData.forEach(
+            (testDatum) => {
+                if (testDatum[0] > maxX) {
+                    maxX = testDatum[0];
+                }
+                if (testDatum[0] < minX) {
+                    minX = testDatum[0];
+                }
+                if (testDatum[1] > maxY) {
+                    maxY = testDatum[1];
+                }
+                if (testDatum[1] < minY) {
+                    minY = testDatum[1];
+                }
+            }
+        );
+
+        let axisXLimit;
+        let axisXLimitNeg;
+        let axisYLimit;
+        let axisYLimitNeg;
+        if (Math.abs(maxX) >= Math.abs(minX)) {
+            axisXLimit = Math.abs(maxX);
+        } else {
+            axisXLimit = Math.abs(minX);
+        }
+        axisXLimitNeg = -axisXLimit;
+
+        if (Math.abs(maxY) >= Math.abs(minY)) {
+            axisYLimit = Math.abs(maxY);
+        } else {
+            axisYLimit = Math.abs(minY);
+        }
+        axisYLimitNeg = -axisYLimit;
+
+        let displayedAxisXLimit = Math.ceil(axisXLimit * 1.1);
+        let displayedAxisXLimitNeg = Math.floor(axisXLimitNeg * 1.1);
+        let displayedAxisYLimit = Math.ceil(axisYLimit * 1.1);
+        let displayedAxisYLimitNeg = Math.floor(axisYLimitNeg * 1.1);
+
+
+        let PLASimulator = document.getElementById("pla-simulator");
+        let ctx = PLASimulator.getContext('2d');
+
+        ctx.font = "14px sans-serif";
+        ctx.strokeStyle = "#cccccc";
+
+        ctx.strokeText("0", PLASimulator.width / 2 + 5, PLASimulator.height / 2 - 5);
+        ctx.strokeText(displayedAxisXLimit.toString(), PLASimulator.width - 35, PLASimulator.height / 2 - 5);
+        ctx.strokeText(displayedAxisXLimitNeg.toString(), 3, PLASimulator.height / 2 - 5);
+        ctx.strokeText(displayedAxisYLimit.toString(), PLASimulator.width / 2 + 5, 20);
+        ctx.strokeText(displayedAxisYLimitNeg.toString(), PLASimulator.width / 2 + 5, PLASimulator.height - 10);
+
+        let widthToPixelRatio = PLASimulator.width / (displayedAxisXLimit * 2);
+        let heightToPixelRatio = PLASimulator.height / (displayedAxisYLimit * 2);
+
+        if (widthToPixelRatio === Infinity) {
+            widthToPixelRatio = 0;
+        }
+        if (heightToPixelRatio === Infinity) {
+            heightToPixelRatio = 0;
+        }
+
+        trainingData.forEach(
+            (trainingDatum) => {
+                let symbol;
+                let color;
+
+                if (trainingDatum[0] === "A") {
+                    symbol = $("#class-A-symbol").val();
+                    color = $("#class-A-color").val();
+                } else {
+                    symbol = $("#class-B-symbol").val();
+                    color = $("#class-B-color").val();
+                }
+
+                ctx.strokeStyle = color;
+                ctx.strokeText(symbol, (PLASimulator.width / 2) + (widthToPixelRatio * trainingDatum[1]) - 3, (PLASimulator.height / 2) - (heightToPixelRatio * trainingDatum[2]) + 4);
+            }
+        );
+    }
+}
+
+function runPLASimulator() {
+
 }
