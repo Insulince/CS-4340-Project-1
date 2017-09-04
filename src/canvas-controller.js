@@ -160,18 +160,18 @@ class CanvasController {
         this.setCoordinatePlaneGlobals();
 
         //TODO Clean
-        canvasController.drawLineViaStandardFormAlgebraicString("0.08401223414886927x + -0.35729777046827116y + -0.05538015403546559 = 0");
+        // canvasController.drawLineViaStandardFormAlgebraicString("0.08401223414886927x + -0.35729777046827116y + -0.05538015403546559 = 0");
 
-        canvasController.drawLineViaSlopeInterceptFormAlgebraicString("y=0.3x+-150"); //TODO: The bias is currently set to adjust based on pixels. This needs to be fixed. With minimal thought, I believe passing in the axis limit to some function and dividing total pizels by that number should allow you to adjust the bias to match its environment.
-        canvasController.drawLineViaSlopeInterceptFormAlgebraicString("y=10x+50");
-        canvasController.drawLineViaSlopeInterceptFormAlgebraicString("y=0.229x+25.333");
-        canvasController.drawLineViaSlopeInterceptFormAlgebraicString("y=1x+0");
-        canvasController.drawLineViaSlopeInterceptFormAlgebraicString("y=0.277775x+-22");
-        canvasController.drawLineViaSlopeInterceptFormAlgebraicString("y=2x+0");
-        canvasController.drawLineViaSlopeInterceptFormAlgebraicString("y=13x+0");
-        canvasController.drawLineViaSlopeInterceptFormAlgebraicString("y=0.03x+0");
-        canvasController.drawLineViaSlopeInterceptFormAlgebraicString("y=0x+0");
-        canvasController.drawLineViaSlopeInterceptFormAlgebraicString("y=99999x+0");
+        canvasController.drawLineViaSlopeInterceptFormAlgebraicString("y=1x+25");
+        // canvasController.drawLineViaSlopeInterceptFormAlgebraicString("y=10x+50");
+        // canvasController.drawLineViaSlopeInterceptFormAlgebraicString("y=0.229x+25.333");
+        // canvasController.drawLineViaSlopeInterceptFormAlgebraicString("y=1x+0");
+        // canvasController.drawLineViaSlopeInterceptFormAlgebraicString("y=0.277775x+-22");
+        // canvasController.drawLineViaSlopeInterceptFormAlgebraicString("y=2x+0");
+        // canvasController.drawLineViaSlopeInterceptFormAlgebraicString("y=13x+0");
+        // canvasController.drawLineViaSlopeInterceptFormAlgebraicString("y=0.03x+0");
+        // canvasController.drawLineViaSlopeInterceptFormAlgebraicString("y=0x+0");
+        // canvasController.drawLineViaSlopeInterceptFormAlgebraicString("y=99999x+0");
     }
 
     setStrokeStyle(color) {
@@ -187,14 +187,33 @@ class CanvasController {
 
     drawLineViaStandardFormAlgebraicString(standardFormAlgebraicString) {
         if (this.isStandardFormAlgebraicString(standardFormAlgebraicString)) {
-            this.drawLineViaSlopeInterceptFormAlgebraicString(this.convertStandardFormAlgebraicStringToSlopeInterceptFormAlgebraicString(standardFormAlgebraicString));
+            if (this.standardFormAlgebraicStringDoesNotViolateBiasRule(standardFormAlgebraicString)) {
+                this.drawLineViaSlopeInterceptFormAlgebraicString(this.convertStandardFormAlgebraicStringToSlopeInterceptFormAlgebraicString(standardFormAlgebraicString));
+            } else {
+                throw new Error("Cannot plot standard form algebraic string \"" + standardFormAlgebraicString + "\" due to bias, no axis limits have been set yet so a bias has no graphical meaning. Please set axis limits first.");
+            }
         } else {
-            throw new Error("Provided string is not a standard-form algebraic string! \"" + standardFormAlgebraicString + "\"");
+            throw new Error("Provided string is not a standard form algebraic string! \"" + standardFormAlgebraicString + "\"");
         }
     }
 
     isStandardFormAlgebraicString(standardFormAlgebraicString) {
         return /^(- *)?\d+(\.(\d)+)? *[xX] *\+ *(- *)?\d+(\.(\d)+)? *[yY] *\+ *(- *)?\d+(\.(\d)+)? *= *0$/.exec(standardFormAlgebraicString);
+    }
+
+    standardFormAlgebraicStringDoesNotViolateBiasRule(standardFormAlgebraicString) {
+        standardFormAlgebraicString = standardFormAlgebraicString.replace(/\s+/g, '');
+        let regexResult = /^(-?\d+(\.(\d)+)?)[xX]\+(-?\d+(\.(\d)+)?)[yY]\+(-?\d+(\.(\d)+)?)=0$/.exec(standardFormAlgebraicString);
+
+        if (regexResult[7]) { //has bias
+            if (!displayedAxisLimit) { //has no axis limit
+                return false;
+            } else {
+                return true;
+            }
+        } else {
+            return true;
+        }
     }
 
     convertStandardFormAlgebraicStringToSlopeInterceptFormAlgebraicString(standardFormAlgebraicString) {
@@ -215,23 +234,37 @@ class CanvasController {
 
     drawLineViaSlopeInterceptFormAlgebraicString(slopeInterceptFormAlgebraicString) {
         if (this.isSlopeInterceptFormAlgebraicString(slopeInterceptFormAlgebraicString)) {
-            console.log(slopeInterceptFormAlgebraicString);
+            if (this.slopeInterceptFormAlgebraicStringDoesNotViolateBiasRule(slopeInterceptFormAlgebraicString)) {
+                let leftmostCoordinateForThisLine = this.getLeftmostCoordinateForSlopeInterceptFormAlgebraicString(slopeInterceptFormAlgebraicString);
+                let rightmostCoordinateForThisLine = this.getRightmostCoordinateForSlopeInterceptFormAlgebraicString(slopeInterceptFormAlgebraicString);
 
-            let leftmostCoordinateForThisLine = this.getLeftmostCoordinateForSlopeInterceptFormAlgebraicString(slopeInterceptFormAlgebraicString);
-            let rightmostCoordinateForThisLine = this.getRightmostCoordinateForSlopeInterceptFormAlgebraicString(slopeInterceptFormAlgebraicString);
-
-            console.log(leftmostCoordinateForThisLine);
-            console.log(rightmostCoordinateForThisLine);
-
-            this.setStrokeStyle("#ff0000");
-            this.drawLineViaFromTo(leftmostCoordinateForThisLine, rightmostCoordinateForThisLine);
+                this.setStrokeStyle("#ff0000");
+                this.drawLineViaFromTo(leftmostCoordinateForThisLine, rightmostCoordinateForThisLine);
+            } else {
+                throw new Error("Cannot plot slope-intercept form algebraic string \"" + slopeInterceptFormAlgebraicString + "\" due to bias, no axis limits have been set yet so a bias has no graphical meaning. Please set axis limits first.");
+            }
         } else {
-            throw new Error("Provided string is not a standard-form algebraic string! \"" + slopeInterceptFormAlgebraicString + "\"");
+            throw new Error("Provided string is not a slope-intercept form algebraic string! \"" + slopeInterceptFormAlgebraicString + "\"");
         }
     }
 
     isSlopeInterceptFormAlgebraicString(slopeInterceptFormAlgebraicString) {
         return /^[yY] *= *(- *)?\d+(\.(\d)+)? *[xX] *\+ *(- *)?\d+(\.(\d)+)?$/.exec(slopeInterceptFormAlgebraicString);
+    }
+
+    slopeInterceptFormAlgebraicStringDoesNotViolateBiasRule(slopeInterceptFormAlgebraicString) {
+        slopeInterceptFormAlgebraicString = slopeInterceptFormAlgebraicString.replace(/\s+/g, '');
+        let regexResult = /^[yY]=(-?\d+(\.(\d)+)?)[xX]\+(-?\d+(\.(\d)+)?)$/.exec(slopeInterceptFormAlgebraicString);
+
+        if (regexResult[4]) { //has bias
+            if (!displayedAxisLimit) { //has no axis limit
+                return false;
+            } else {
+                return true;
+            }
+        } else {
+            return true;
+        }
     }
 
     getLeftmostCoordinateForSlopeInterceptFormAlgebraicString(slopeInterceptFormAlgebraicString) {
@@ -240,12 +273,13 @@ class CanvasController {
 
         let M = parseFloat(regexResult[1]);
         let B = parseFloat(regexResult[4]);
+        let pixelRatio = this.centerMiddleCoordinate.x / displayedAxisLimit;
 
         let leftmostOrdinalXValue = this.leftMiddleCoordinate.x - this.centerMiddleCoordinate.x;
 
         let leftmostCoordinateForThisLine = {
             x: this.leftMiddleCoordinate.x,
-            y: ((M * leftmostOrdinalXValue + B) - this.centerMiddleCoordinate.x) * -1
+            y: ((M * leftmostOrdinalXValue + (B * pixelRatio)) - this.centerMiddleCoordinate.x) * -1
         };
 
         return leftmostCoordinateForThisLine;
@@ -257,12 +291,13 @@ class CanvasController {
 
         let M = parseFloat(regexResult[1]);
         let B = parseFloat(regexResult[4]);
+        let pixelRatio = this.centerMiddleCoordinate.x / displayedAxisLimit;
 
         let rightmostOrdinalXValue = this.rightMiddleCoordinate.x - this.centerMiddleCoordinate.x;
 
         let rightmostCoordinateForThisLine = {
             x: this.rightMiddleCoordinate.x,
-            y: ((M * rightmostOrdinalXValue + B) - this.centerMiddleCoordinate.x) * -1
+            y: ((M * rightmostOrdinalXValue + (B * pixelRatio)) - this.centerMiddleCoordinate.x) * -1
         };
 
         return rightmostCoordinateForThisLine;

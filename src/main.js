@@ -185,6 +185,9 @@ function getDataInputFileContents() {
     );
 }
 
+let displayedAxisLimit = undefined;
+let displayedAxisLimitNeg = undefined;
+
 function displayInputDataOnCanvas() {
     if (inputData) {
         let regexResult = resetRegularExpression(INPUT_DATA_FORMAT_REGEX).exec(inputData);
@@ -267,10 +270,13 @@ function displayInputDataOnCanvas() {
         }
         axisYLimitNeg = -axisYLimit;
 
-        let displayedAxisXLimit = Math.ceil(axisXLimit * 1.1);
-        let displayedAxisXLimitNeg = Math.floor(axisXLimitNeg * 1.1);
-        let displayedAxisYLimit = Math.ceil(axisYLimit * 1.1);
-        let displayedAxisYLimitNeg = Math.floor(axisYLimitNeg * 1.1);
+        if (axisXLimit >= axisYLimit) {
+            displayedAxisLimit = Math.ceil(axisXLimit * 1.1);
+            displayedAxisLimitNeg = Math.floor(axisXLimitNeg * 1.1);
+        } else {
+            displayedAxisLimit = Math.ceil(axisYLimit * 1.1);
+            displayedAxisLimitNeg = Math.floor(axisYLimitNeg * 1.1);
+        }
 
 
         let PLASimulator = document.getElementById("pla-simulator");
@@ -280,13 +286,13 @@ function displayInputDataOnCanvas() {
         ctx.strokeStyle = "#cccccc";
 
         ctx.strokeText("0", PLASimulator.width / 2 + 5, PLASimulator.height / 2 - 5);
-        ctx.strokeText(displayedAxisXLimit.toString(), PLASimulator.width - 35, PLASimulator.height / 2 - 5);
-        ctx.strokeText(displayedAxisXLimitNeg.toString(), 3, PLASimulator.height / 2 - 5);
-        ctx.strokeText(displayedAxisYLimit.toString(), PLASimulator.width / 2 + 5, 20);
-        ctx.strokeText(displayedAxisYLimitNeg.toString(), PLASimulator.width / 2 + 5, PLASimulator.height - 10);
+        ctx.strokeText(displayedAxisLimit.toString(), PLASimulator.width - 35, PLASimulator.height / 2 - 5);
+        ctx.strokeText(displayedAxisLimitNeg.toString(), 3, PLASimulator.height / 2 - 5);
+        ctx.strokeText(displayedAxisLimit.toString(), PLASimulator.width / 2 + 5, 20);
+        ctx.strokeText(displayedAxisLimitNeg.toString(), PLASimulator.width / 2 + 5, PLASimulator.height - 10);
 
-        let widthToPixelRatio = PLASimulator.width / (displayedAxisXLimit * 2);
-        let heightToPixelRatio = PLASimulator.height / (displayedAxisYLimit * 2);
+        let widthToPixelRatio = PLASimulator.width / (displayedAxisLimit * 2);
+        let heightToPixelRatio = PLASimulator.height / (displayedAxisLimit * 2);
 
         if (widthToPixelRatio === Infinity) {
             widthToPixelRatio = 0;
