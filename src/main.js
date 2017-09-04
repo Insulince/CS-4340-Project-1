@@ -15,10 +15,12 @@ function setupPage() {
 
     canvasController = new CanvasController(document.getElementById("pla-simulator"));
     drawBasePLASimulatorElements();
+
     disableRunPLASimulatorButton();
     fillDataInputWrapper();
 }
 
+//TODO Unused???
 function resize() {
     canvasController.resize(canvasController.canvas.parentElement.offsetWidth, canvasController.canvas.parentElement.offsetWidth);
 

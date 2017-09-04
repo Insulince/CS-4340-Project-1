@@ -14,7 +14,7 @@ class CanvasController {
         this._rightTopCoordinatethis = undefined;
         this._rightMiddleCoordinatethis = undefined;
         this._rightBottomCoordinatethis = undefined;
-        
+
         this.canvas = canvas;
         this.ctx = canvas.getContext("2d");
         this.setCoordinatePlaneGlobals();
@@ -153,11 +153,25 @@ class CanvasController {
 
     resize(width, height) {
         this.clear();
-        
+
         this.canvas.width = width;
         this.canvas.height = height;
-        
+
         this.setCoordinatePlaneGlobals();
+
+        //TODO Clean
+        canvasController.drawLineViaStandardFormAlgebraicString("0.08401223414886927x + -0.35729777046827116y + -0.05538015403546559 = 0");
+
+        canvasController.drawLineViaSlopeInterceptFormAlgebraicString("y=0.3x+-150"); //TODO: The bias is currently set to adjust based on pixels. This needs to be fixed. With minimal thought, I believe passing in the axis limit to some function and dividing total pizels by that number should allow you to adjust the bias to match its environment.
+        canvasController.drawLineViaSlopeInterceptFormAlgebraicString("y=10x+50");
+        canvasController.drawLineViaSlopeInterceptFormAlgebraicString("y=0.229x+25.333");
+        canvasController.drawLineViaSlopeInterceptFormAlgebraicString("y=1x+0");
+        canvasController.drawLineViaSlopeInterceptFormAlgebraicString("y=0.277775x+-22");
+        canvasController.drawLineViaSlopeInterceptFormAlgebraicString("y=2x+0");
+        canvasController.drawLineViaSlopeInterceptFormAlgebraicString("y=13x+0");
+        canvasController.drawLineViaSlopeInterceptFormAlgebraicString("y=0.03x+0");
+        canvasController.drawLineViaSlopeInterceptFormAlgebraicString("y=0x+0");
+        canvasController.drawLineViaSlopeInterceptFormAlgebraicString("y=99999x+0");
     }
 
     setStrokeStyle(color) {
@@ -169,5 +183,88 @@ class CanvasController {
         this.ctx.moveTo(from.x, from.y);
         this.ctx.lineTo(to.x, to.y);
         this.ctx.stroke();
+    }
+
+    drawLineViaStandardFormAlgebraicString(standardFormAlgebraicString) {
+        if (this.isStandardFormAlgebraicString(standardFormAlgebraicString)) {
+            this.drawLineViaSlopeInterceptFormAlgebraicString(this.convertStandardFormAlgebraicStringToSlopeInterceptFormAlgebraicString(standardFormAlgebraicString));
+        } else {
+            throw new Error("Provided string is not a standard-form algebraic string! \"" + standardFormAlgebraicString + "\"");
+        }
+    }
+
+    isStandardFormAlgebraicString(standardFormAlgebraicString) {
+        return /^(- *)?\d+(\.(\d)+)? *[xX] *\+ *(- *)?\d+(\.(\d)+)? *[yY] *\+ *(- *)?\d+(\.(\d)+)? *= *0$/.exec(standardFormAlgebraicString);
+    }
+
+    convertStandardFormAlgebraicStringToSlopeInterceptFormAlgebraicString(standardFormAlgebraicString) {
+        standardFormAlgebraicString = standardFormAlgebraicString.replace(/\s+/g, '');
+        let regexResult = /^(-?\d+(\.(\d)+)?)[xX]\+(-?\d+(\.(\d)+)?)[yY]\+(-?\d+(\.(\d)+)?)=0$/.exec(standardFormAlgebraicString);
+
+        let A = regexResult[1];
+        let B = regexResult[4];
+        let C = regexResult[7];
+
+        let M = (-1 * A) / B;
+        let D = (-1 * C) / B;
+
+        let slopeInterceptFormAlgebraicString = "y=" + M + "x+" + D;
+
+        return slopeInterceptFormAlgebraicString;
+    }
+
+    drawLineViaSlopeInterceptFormAlgebraicString(slopeInterceptFormAlgebraicString) {
+        if (this.isSlopeInterceptFormAlgebraicString(slopeInterceptFormAlgebraicString)) {
+            console.log(slopeInterceptFormAlgebraicString);
+
+            let leftmostCoordinateForThisLine = this.getLeftmostCoordinateForSlopeInterceptFormAlgebraicString(slopeInterceptFormAlgebraicString);
+            let rightmostCoordinateForThisLine = this.getRightmostCoordinateForSlopeInterceptFormAlgebraicString(slopeInterceptFormAlgebraicString);
+
+            console.log(leftmostCoordinateForThisLine);
+            console.log(rightmostCoordinateForThisLine);
+
+            this.setStrokeStyle("#ff0000");
+            this.drawLineViaFromTo(leftmostCoordinateForThisLine, rightmostCoordinateForThisLine);
+        } else {
+            throw new Error("Provided string is not a standard-form algebraic string! \"" + slopeInterceptFormAlgebraicString + "\"");
+        }
+    }
+
+    isSlopeInterceptFormAlgebraicString(slopeInterceptFormAlgebraicString) {
+        return /^[yY] *= *(- *)?\d+(\.(\d)+)? *[xX] *\+ *(- *)?\d+(\.(\d)+)?$/.exec(slopeInterceptFormAlgebraicString);
+    }
+
+    getLeftmostCoordinateForSlopeInterceptFormAlgebraicString(slopeInterceptFormAlgebraicString) {
+        slopeInterceptFormAlgebraicString = slopeInterceptFormAlgebraicString.replace(/\s+/g, '');
+        let regexResult = /^[yY]=(-?\d+(\.(\d)+)?)[xX]\+(-?\d+(\.(\d)+)?)$/.exec(slopeInterceptFormAlgebraicString);
+
+        let M = parseFloat(regexResult[1]);
+        let B = parseFloat(regexResult[4]);
+
+        let leftmostOrdinalXValue = this.leftMiddleCoordinate.x - this.centerMiddleCoordinate.x;
+
+        let leftmostCoordinateForThisLine = {
+            x: this.leftMiddleCoordinate.x,
+            y: ((M * leftmostOrdinalXValue + B) - this.centerMiddleCoordinate.x) * -1
+        };
+
+        return leftmostCoordinateForThisLine;
+    }
+
+    getRightmostCoordinateForSlopeInterceptFormAlgebraicString(slopeInterceptFormAlgebraicString) {
+        slopeInterceptFormAlgebraicString = slopeInterceptFormAlgebraicString.replace(/\s+/g, '');
+        let regexResult = /^[yY]=(-?\d+(\.(\d)+)?)[xX]\+(-?\d+(\.(\d)+)?)$/.exec(slopeInterceptFormAlgebraicString);
+
+        let M = parseFloat(regexResult[1]);
+        let B = parseFloat(regexResult[4]);
+
+        let rightmostOrdinalXValue = this.rightMiddleCoordinate.x - this.centerMiddleCoordinate.x;
+
+        let rightmostCoordinateForThisLine = {
+            x: this.rightMiddleCoordinate.x,
+            y: ((M * rightmostOrdinalXValue + B) - this.centerMiddleCoordinate.x) * -1
+        };
+
+        return rightmostCoordinateForThisLine;
     }
 }
