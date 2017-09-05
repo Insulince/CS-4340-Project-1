@@ -160,18 +160,9 @@ class CanvasController {
         this.setCoordinatePlaneGlobals();
 
         //TODO Clean
-        // canvasController.drawLineViaStandardFormAlgebraicString("0.08401223414886927x + -0.35729777046827116y + -0.05538015403546559 = 0");
+        // canvasController.drawLineViaStandardFormAlgebraicString("-1x+3.6y+17.3=0");
 
-        canvasController.drawLineViaSlopeInterceptFormAlgebraicString("y=1x+25");
-        // canvasController.drawLineViaSlopeInterceptFormAlgebraicString("y=10x+50");
-        // canvasController.drawLineViaSlopeInterceptFormAlgebraicString("y=0.229x+25.333");
-        // canvasController.drawLineViaSlopeInterceptFormAlgebraicString("y=1x+0");
-        // canvasController.drawLineViaSlopeInterceptFormAlgebraicString("y=0.277775x+-22");
-        // canvasController.drawLineViaSlopeInterceptFormAlgebraicString("y=2x+0");
-        // canvasController.drawLineViaSlopeInterceptFormAlgebraicString("y=13x+0");
-        // canvasController.drawLineViaSlopeInterceptFormAlgebraicString("y=0.03x+0");
         // canvasController.drawLineViaSlopeInterceptFormAlgebraicString("y=0x+0");
-        // canvasController.drawLineViaSlopeInterceptFormAlgebraicString("y=99999x+0");
     }
 
     setStrokeStyle(color) {
@@ -198,14 +189,14 @@ class CanvasController {
     }
 
     isStandardFormAlgebraicString(standardFormAlgebraicString) {
-        return /^(- *)?\d+(\.(\d)+)? *[xX] *\+ *(- *)?\d+(\.(\d)+)? *[yY] *\+ *(- *)?\d+(\.(\d)+)? *= *0$/.exec(standardFormAlgebraicString);
+        return /^-?\d+(\.(\d)+)?(e-?\d+(\.(\d)+)?)?[xX]\+-?\d+(\.(\d)+)?(e-?\d+(\.(\d)+)?)?[yY]\+-?\d+(\.(\d)+)?(e-?\d+(\.(\d)+)?)?=0$/.exec(standardFormAlgebraicString.replace(/\s+/g, ''));
     }
 
     standardFormAlgebraicStringDoesNotViolateBiasRule(standardFormAlgebraicString) {
         standardFormAlgebraicString = standardFormAlgebraicString.replace(/\s+/g, '');
-        let regexResult = /^(-?\d+(\.(\d)+)?)[xX]\+(-?\d+(\.(\d)+)?)[yY]\+(-?\d+(\.(\d)+)?)=0$/.exec(standardFormAlgebraicString);
+        let regexResult = /^(-?\d+(\.(\d)+)?(e-?\d+(\.(\d)+)?)?)[xX]\+(-?\d+(\.(\d)+)?(e-?\d+(\.(\d)+)?)?)[yY]\+(-?\d+(\.(\d)+)?(e-?\d+(\.(\d)+)?)?)=0$/.exec(standardFormAlgebraicString);
 
-        if (regexResult[7]) { //has bias
+        if (regexResult[13]) { //has bias
             if (!displayedAxisLimit) { //has no axis limit
                 return false;
             } else {
@@ -218,14 +209,33 @@ class CanvasController {
 
     convertStandardFormAlgebraicStringToSlopeInterceptFormAlgebraicString(standardFormAlgebraicString) {
         standardFormAlgebraicString = standardFormAlgebraicString.replace(/\s+/g, '');
-        let regexResult = /^(-?\d+(\.(\d)+)?)[xX]\+(-?\d+(\.(\d)+)?)[yY]\+(-?\d+(\.(\d)+)?)=0$/.exec(standardFormAlgebraicString);
+        let regexResult = /^(-?\d+(\.(\d)+)?(e-?\d+(\.(\d)+)?)?)[xX]\+(-?\d+(\.(\d)+)?(e-?\d+(\.(\d)+)?)?)[yY]\+(-?\d+(\.(\d)+)?(e-?\d+(\.(\d)+)?)?)=0$/.exec(standardFormAlgebraicString);
 
         let A = regexResult[1];
-        let B = regexResult[4];
-        let C = regexResult[7];
+        let B = regexResult[7];
+        let C = regexResult[13];
 
         let M = (-1 * A) / B;
         let D = (-1 * C) / B;
+
+        if (M === Infinity) {
+            M = 99999;
+        }
+        if (M === -Infinity) {
+            M = -99999;
+        }
+        if (isNaN(M)) {
+            M = 0;
+        }
+        if (D === Infinity) {
+            D = 99999;
+        }
+        if (D === -Infinity) {
+            D = -99999;
+        }
+        if (isNaN(D)) {
+            D = 0;
+        }
 
         let slopeInterceptFormAlgebraicString = "y=" + M + "x+" + D;
 
@@ -238,7 +248,6 @@ class CanvasController {
                 let leftmostCoordinateForThisLine = this.getLeftmostCoordinateForSlopeInterceptFormAlgebraicString(slopeInterceptFormAlgebraicString);
                 let rightmostCoordinateForThisLine = this.getRightmostCoordinateForSlopeInterceptFormAlgebraicString(slopeInterceptFormAlgebraicString);
 
-                this.setStrokeStyle("#ff0000");
                 this.drawLineViaFromTo(leftmostCoordinateForThisLine, rightmostCoordinateForThisLine);
             } else {
                 throw new Error("Cannot plot slope-intercept form algebraic string \"" + slopeInterceptFormAlgebraicString + "\" due to bias, no axis limits have been set yet so a bias has no graphical meaning. Please set axis limits first.");
@@ -249,14 +258,14 @@ class CanvasController {
     }
 
     isSlopeInterceptFormAlgebraicString(slopeInterceptFormAlgebraicString) {
-        return /^[yY] *= *(- *)?\d+(\.(\d)+)? *[xX] *\+ *(- *)?\d+(\.(\d)+)?$/.exec(slopeInterceptFormAlgebraicString);
+        return /^[yY]=-?\d+(\.(\d)+)?(e-?\d+(\.(\d)+)?)?[xX]\+-?\d+(\.(\d)+)?(e-?\d+(\.(\d)+)?)?$/.exec(slopeInterceptFormAlgebraicString.replace(/\s+/g, ''));
     }
 
     slopeInterceptFormAlgebraicStringDoesNotViolateBiasRule(slopeInterceptFormAlgebraicString) {
         slopeInterceptFormAlgebraicString = slopeInterceptFormAlgebraicString.replace(/\s+/g, '');
-        let regexResult = /^[yY]=(-?\d+(\.(\d)+)?)[xX]\+(-?\d+(\.(\d)+)?)$/.exec(slopeInterceptFormAlgebraicString);
+        let regexResult = /^[yY]=(-?\d+(\.(\d)+)?(e-?\d+(\.(\d)+)?)?)[xX]\+(-?\d+(\.(\d)+)?(e-?\d+(\.(\d)+)?)?)$/.exec(slopeInterceptFormAlgebraicString);
 
-        if (regexResult[4]) { //has bias
+        if (regexResult[7]) { //has bias
             if (!displayedAxisLimit) { //has no axis limit
                 return false;
             } else {
@@ -269,10 +278,10 @@ class CanvasController {
 
     getLeftmostCoordinateForSlopeInterceptFormAlgebraicString(slopeInterceptFormAlgebraicString) {
         slopeInterceptFormAlgebraicString = slopeInterceptFormAlgebraicString.replace(/\s+/g, '');
-        let regexResult = /^[yY]=(-?\d+(\.(\d)+)?)[xX]\+(-?\d+(\.(\d)+)?)$/.exec(slopeInterceptFormAlgebraicString);
+        let regexResult = /^[yY]=(-?\d+(\.(\d)+)?(e-?\d+(\.(\d)+)?)?)[xX]\+(-?\d+(\.(\d)+)?(e-?\d+(\.(\d)+)?)?)$/.exec(slopeInterceptFormAlgebraicString);
 
         let M = parseFloat(regexResult[1]);
-        let B = parseFloat(regexResult[4]);
+        let B = parseFloat(regexResult[7]);
         let pixelRatio = this.centerMiddleCoordinate.x / displayedAxisLimit;
 
         let leftmostOrdinalXValue = this.leftMiddleCoordinate.x - this.centerMiddleCoordinate.x;
@@ -287,10 +296,10 @@ class CanvasController {
 
     getRightmostCoordinateForSlopeInterceptFormAlgebraicString(slopeInterceptFormAlgebraicString) {
         slopeInterceptFormAlgebraicString = slopeInterceptFormAlgebraicString.replace(/\s+/g, '');
-        let regexResult = /^[yY]=(-?\d+(\.(\d)+)?)[xX]\+(-?\d+(\.(\d)+)?)$/.exec(slopeInterceptFormAlgebraicString);
+        let regexResult = /^[yY]=(-?\d+(\.(\d)+)?(e-?\d+(\.(\d)+)?)?)[xX]\+(-?\d+(\.(\d)+)?(e-?\d+(\.(\d)+)?)?)$/.exec(slopeInterceptFormAlgebraicString);
 
         let M = parseFloat(regexResult[1]);
-        let B = parseFloat(regexResult[4]);
+        let B = parseFloat(regexResult[7]);
         let pixelRatio = this.centerMiddleCoordinate.x / displayedAxisLimit;
 
         let rightmostOrdinalXValue = this.rightMiddleCoordinate.x - this.centerMiddleCoordinate.x;

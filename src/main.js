@@ -9,6 +9,8 @@ const INPUT_DATA_FORMAT_REGEX = /^ *TRAIN(ING)? *(DATA)? *: *((\( *[AB] *, *-?\d
 let canvasController = undefined;
 
 let inputData = undefined;
+let aTrainingData = undefined;
+let aTestData = undefined;
 
 function setupPage() {
     generateRandomTestData();
@@ -215,6 +217,9 @@ function displayInputDataOnCanvas() {
             }
         );
 
+        aTrainingData = trainingData;
+        aTestData = testData;
+
         let maxX = -Infinity;
         let minX = Infinity;
         let maxY = -Infinity;
@@ -322,5 +327,23 @@ function displayInputDataOnCanvas() {
 }
 
 function runPLASimulator() {
+    canvasController.clear();
+    drawBasePLASimulatorElements();
+    displayInputDataOnCanvas();
+    let PLA = new PerceptronLearningAlgorithm(canvasController, aTrainingData, aTestData);
+    PLA.invoke().then(
+        (standardFormAlgebraicString) => {
+            console.log("PLA Complete. Final equation: \"" + standardFormAlgebraicString + "\"");
 
+            canvasController.clear();
+            drawBasePLASimulatorElements();
+            displayInputDataOnCanvas();
+            canvasController.setStrokeStyle("#0000ff");
+            canvasController.drawLineViaStandardFormAlgebraicString(standardFormAlgebraicString);
+        }
+    ).catch(
+        (error) => {
+            //TODO
+        }
+    );
 }
