@@ -7,10 +7,9 @@ const PRESET_DATA = [
 const INPUT_DATA_FORMAT_REGEX = /^ *TRAIN(ING)? *(DATA)? *: *((\( *[AB] *, *-?\d+ *, *-?\d+ *\) *)+) *; *TEST(ING)? *(DATA)? *: *((\( *-?\d+ *, *-?\d+ *\) *)+) *$/g;
 
 let canvasController = undefined;
-
-let inputData = undefined;
-let aTrainingData = undefined;
-let aTestData = undefined;
+let PLA = undefined;
+let displayedAxisLimit = undefined;
+let displayedAxisLimitNeg = undefined;
 
 function setupPage() {
     generateRandomTestData();
@@ -18,20 +17,28 @@ function setupPage() {
     canvasController = new CanvasController(document.getElementById("pla-simulator"));
     drawBasePLASimulatorElements();
 
+    changeActionButtonText("Run Training Phase");
     disableRunPLASimulatorButton();
     fillDataInputWrapper();
 }
 
-//TODO Unused???
 function resize() {
     canvasController.resize(canvasController.canvas.parentElement.offsetWidth, canvasController.canvas.parentElement.offsetWidth);
 
     drawBasePLASimulatorElements();
-    displayInputDataOnCanvas();
+    displayAxisLimits();
+    if (PLA) {
+        if (PLA.hypothesisLineAsStandardFormAlgebraicString) {
+            PLA.drawHypothesisLine();
+        }
+        PLA.plotTrainingTwoDimensionalFeatureVectors();
+        PLA.plotClassifiedTestingTwoDimensionalFeatureVectors();
+    }
 }
 
 function drawBasePLASimulatorElements() {
     drawPLASimulatorAxes();
+    displayAxisLimits();
 }
 
 function drawPLASimulatorAxes() {
@@ -95,17 +102,32 @@ function loadInputDataIntoPLASimulator() {
     retrieveInputDataFromInputMethod().then(
         (fetchedData) => {
             if (validInputData(fetchedData)) {
-                //TODO Instantiate the future PLA object here?
-                inputData = fetchedData;
-
                 canvasController.clear();
                 drawBasePLASimulatorElements();
 
-                displayInputDataOnCanvas();
+                let inputData = parseInputData(fetchedData);
+                let options = {
+                    maximumIterations: 100,
+                    learningRate: 0.1,
+                    theta: 0,
+                    advanceRate: 100,
+                    classificationOne: new Classification("A", "•", "#00ff00"),
+                    classificationTwo: new Classification("B", "•", "#ff0000"),
+                    onAdvance: () => {
+                        console.log("Advanced.");
+                    },
+                    onComplete: () => {
+                        console.log("Completed.");
+                    }
+                };
+
+                getAxisLimits(inputData.trainingData, inputData.testingData);
+                displayAxisLimits();
+
+                PLA = new OfflineTwoDimensionalPerceptronLearningAlgorithmForBinaryClassification(canvasController, inputData, options);
+
                 enableRunPLASimulatorButton();
             } else {
-                inputData = undefined;
-
                 alert("Invalid data!"); //TODO?
                 disableRunPLASimulatorButton();
             }
@@ -187,163 +209,219 @@ function getDataInputFileContents() {
     );
 }
 
-let displayedAxisLimit = undefined;
-let displayedAxisLimitNeg = undefined;
+function parseInputData(rawData) {
+    let inputData = {
+        trainingData: undefined,
+        testingData: undefined
+    };
 
-function displayInputDataOnCanvas() {
-    if (inputData) {
-        let regexResult = resetRegularExpression(INPUT_DATA_FORMAT_REGEX).exec(inputData);
+    let regexResult = resetRegularExpression(INPUT_DATA_FORMAT_REGEX).exec(rawData);
 
-        let trainingData = regexResult[3].replace(/\s+/g, '').substring(1).slice(0, -1).split(")(").map(
-            (trainingDatum) => {
-                return trainingDatum.split(",");
-            }
-        );
-        trainingData.forEach(
-            (trainingDatum) => {
-                trainingDatum[1] = parseInt(trainingDatum[1]);
-                trainingDatum[2] = parseInt(trainingDatum[2]);
-            }
-        );
-        let testData = regexResult[7].replace(/\s+/g, '').substring(1).slice(0, -1).split(")(").map(
-            (testDatum) => {
-                return testDatum.split(",");
-            }
-        );
-        testData.forEach(
-            (testDatum) => {
-                testDatum[0] = parseInt(testDatum[0]);
-                testDatum[1] = parseInt(testDatum[1]);
-            }
-        );
-
-        aTrainingData = trainingData;
-        aTestData = testData;
-
-        let maxX = -Infinity;
-        let minX = Infinity;
-        let maxY = -Infinity;
-        let minY = Infinity;
-        trainingData.forEach(
-            (trainingDatum) => {
-                if (trainingDatum[1] > maxX) {
-                    maxX = trainingDatum[1];
-                }
-                if (trainingDatum[1] < minX) {
-                    minX = trainingDatum[1];
-                }
-                if (trainingDatum[2] > maxY) {
-                    maxY = trainingDatum[2];
-                }
-                if (trainingDatum[2] < minY) {
-                    minY = trainingDatum[2];
-                }
-            }
-        );
-        testData.forEach(
-            (testDatum) => {
-                if (testDatum[0] > maxX) {
-                    maxX = testDatum[0];
-                }
-                if (testDatum[0] < minX) {
-                    minX = testDatum[0];
-                }
-                if (testDatum[1] > maxY) {
-                    maxY = testDatum[1];
-                }
-                if (testDatum[1] < minY) {
-                    minY = testDatum[1];
-                }
-            }
-        );
-
-        let axisXLimit;
-        let axisXLimitNeg;
-        let axisYLimit;
-        let axisYLimitNeg;
-        if (Math.abs(maxX) >= Math.abs(minX)) {
-            axisXLimit = Math.abs(maxX);
-        } else {
-            axisXLimit = Math.abs(minX);
+    let trainingData = regexResult[3].replace(/\s+/g, '').substring(1).slice(0, -1).split(")(").map(
+        (trainingDatum) => {
+            return trainingDatum.split(",");
         }
-        axisXLimitNeg = -axisXLimit;
-
-        if (Math.abs(maxY) >= Math.abs(minY)) {
-            axisYLimit = Math.abs(maxY);
-        } else {
-            axisYLimit = Math.abs(minY);
+    );
+    trainingData.forEach(
+        (trainingDatum) => {
+            trainingDatum[1] = parseFloat(trainingDatum[1]);
+            trainingDatum[2] = parseFloat(trainingDatum[2]);
         }
-        axisYLimitNeg = -axisYLimit;
+    );
 
-        if (axisXLimit >= axisYLimit) {
-            displayedAxisLimit = Math.ceil(axisXLimit * 1.1);
-            displayedAxisLimitNeg = Math.floor(axisXLimitNeg * 1.1);
-        } else {
-            displayedAxisLimit = Math.ceil(axisYLimit * 1.1);
-            displayedAxisLimitNeg = Math.floor(axisYLimitNeg * 1.1);
+    let testingData = regexResult[7].replace(/\s+/g, '').substring(1).slice(0, -1).split(")(").map(
+        (testDatum) => {
+            return testDatum.split(",");
         }
-
-
-        let PLASimulator = document.getElementById("pla-simulator");
-        let ctx = PLASimulator.getContext('2d');
-
-        ctx.font = "14px sans-serif";
-        ctx.strokeStyle = "#cccccc";
-
-        ctx.strokeText("0", PLASimulator.width / 2 + 5, PLASimulator.height / 2 - 5);
-        ctx.strokeText(displayedAxisLimit.toString(), PLASimulator.width - 35, PLASimulator.height / 2 - 5);
-        ctx.strokeText(displayedAxisLimitNeg.toString(), 3, PLASimulator.height / 2 - 5);
-        ctx.strokeText(displayedAxisLimit.toString(), PLASimulator.width / 2 + 5, 20);
-        ctx.strokeText(displayedAxisLimitNeg.toString(), PLASimulator.width / 2 + 5, PLASimulator.height - 10);
-
-        let widthToPixelRatio = PLASimulator.width / (displayedAxisLimit * 2);
-        let heightToPixelRatio = PLASimulator.height / (displayedAxisLimit * 2);
-
-        if (widthToPixelRatio === Infinity) {
-            widthToPixelRatio = 0;
+    );
+    testingData.forEach(
+        (testingDatum) => {
+            testingDatum[2] = parseFloat(testingDatum[1]);
+            testingDatum[1] = parseFloat(testingDatum[0]);
+            testingDatum[0] = "";
         }
-        if (heightToPixelRatio === Infinity) {
-            heightToPixelRatio = 0;
-        }
+    );
 
-        trainingData.forEach(
-            (trainingDatum) => {
-                let symbol;
-                let color;
+    inputData.trainingData = trainingData;
+    inputData.testingData = testingData;
 
-                if (trainingDatum[0] === "A") {
-                    symbol = $("#class-A-symbol").val();
-                    color = $("#class-A-color").val();
-                } else {
-                    symbol = $("#class-B-symbol").val();
-                    color = $("#class-B-color").val();
-                }
+    return inputData;
+}
 
-                ctx.strokeStyle = color;
-                ctx.strokeText(symbol, (PLASimulator.width / 2) + (widthToPixelRatio * trainingDatum[1]) - 3, (PLASimulator.height / 2) - (heightToPixelRatio * trainingDatum[2]) + 4);
+function getAxisLimits(trainingData, testingData) {
+    let maxX = -Infinity;
+    let minX = Infinity;
+    let maxY = -Infinity;
+    let minY = Infinity;
+
+    trainingData.forEach(
+        (trainingDatum) => {
+            if (trainingDatum[1] > maxX) {
+                maxX = trainingDatum[1];
             }
-        );
+            if (trainingDatum[1] < minX) {
+                minX = trainingDatum[1];
+            }
+            if (trainingDatum[2] > maxY) {
+                maxY = trainingDatum[2];
+            }
+            if (trainingDatum[2] < minY) {
+                minY = trainingDatum[2];
+            }
+        }
+    );
+    testingData.forEach(
+        (testDatum) => {
+            if (testDatum[0] > maxX) {
+                maxX = testDatum[0];
+            }
+            if (testDatum[0] < minX) {
+                minX = testDatum[0];
+            }
+            if (testDatum[1] > maxY) {
+                maxY = testDatum[1];
+            }
+            if (testDatum[1] < minY) {
+                minY = testDatum[1];
+            }
+        }
+    );
+
+    let axisXLimit;
+    let axisXLimitNeg;
+    let axisYLimit;
+    let axisYLimitNeg;
+    if (Math.abs(maxX) >= Math.abs(minX)) {
+        axisXLimit = Math.abs(maxX);
+    } else {
+        axisXLimit = Math.abs(minX);
+    }
+    axisXLimitNeg = -axisXLimit;
+
+    if (Math.abs(maxY) >= Math.abs(minY)) {
+        axisYLimit = Math.abs(maxY);
+    } else {
+        axisYLimit = Math.abs(minY);
+    }
+    axisYLimitNeg = -axisYLimit;
+
+    if (axisXLimit >= axisYLimit) {
+        displayedAxisLimit = Math.ceil(axisXLimit * 1.1);
+        displayedAxisLimitNeg = Math.floor(axisXLimitNeg * 1.1);
+    } else {
+        displayedAxisLimit = Math.ceil(axisYLimit * 1.1);
+        displayedAxisLimitNeg = Math.floor(axisYLimitNeg * 1.1);
+    }
+}
+
+function displayAxisLimits() {
+    if (displayedAxisLimit) {
+        canvasController.ctx.font = "14px sans-serif";
+        canvasController.setStrokeStyle("#cccccc");
+
+        canvasController.drawTextAt("0", {x: canvasController.canvas.width / 2 + 5, y: canvasController.canvas.height / 2 - 5});
+        canvasController.drawTextAt(displayedAxisLimit.toString(), {x: canvasController.canvas.width - 30, y: canvasController.canvas.height / 2 - 5});
+        canvasController.drawTextAt(displayedAxisLimitNeg.toString(), {x: 2, y: canvasController.canvas.height / 2 - 5});
+        canvasController.drawTextAt(displayedAxisLimit.toString(), {x: canvasController.canvas.width / 2 + 5, y: 14});
+        canvasController.drawTextAt(displayedAxisLimitNeg.toString(), {x: canvasController.canvas.width / 2 + 5, y: canvasController.canvas.height - 7});
     }
 }
 
 function runPLASimulator() {
-    canvasController.clear();
-    drawBasePLASimulatorElements();
-    displayInputDataOnCanvas();
-    let PLA = new PerceptronLearningAlgorithm(canvasController, aTrainingData, aTestData);
-    PLA.invoke().then(
-        (standardFormAlgebraicString) => {
-            console.log("PLA Complete. Final equation: \"" + standardFormAlgebraicString + "\"");
-
+    if (PLA) {
+        if (PLA.status === "Not Started") {
             canvasController.clear();
             drawBasePLASimulatorElements();
-            displayInputDataOnCanvas();
-            canvasController.setStrokeStyle("#0000ff");
-            canvasController.drawLineViaStandardFormAlgebraicString(standardFormAlgebraicString);
+            displayAxisLimits();
+            PLA.plotTrainingTwoDimensionalFeatureVectors();
+
+            PLA.runTraining().then(
+                () => {
+                    console.log("PLA Training Complete. Final equation: \"" + PLA.hypothesisLineAsStandardFormAlgebraicString + "\"");
+
+                    canvasController.clear();
+                    drawBasePLASimulatorElements();
+                    PLA.plotTrainingTwoDimensionalFeatureVectors();
+                    canvasController.setStrokeStyle("#0000ff");
+                    canvasController.drawLineViaStandardFormAlgebraicString(PLA.hypothesisLineAsStandardFormAlgebraicString);
+
+                    changeActionButtonText("Run Test Phase");
+                }
+            ).catch(
+                (error) => {
+                    //TODO
+                }
+            );
+        } else if (PLA.status === "Finished Training") {
+            canvasController.clear();
+            drawBasePLASimulatorElements();
+            displayAxisLimits();
+            PLA.drawHypothesisLine();
+            PLA.plotTrainingTwoDimensionalFeatureVectors();
+
+            PLA.runTesting().then(
+                () => {
+                    console.log("PLA Testing Complete.");
+
+                    canvasController.clear();
+                    drawBasePLASimulatorElements();
+                    PLA.plotTrainingTwoDimensionalFeatureVectors();
+                    PLA.plotClassifiedTestingTwoDimensionalFeatureVectors();
+                    canvasController.setStrokeStyle("#0000ff");
+                    canvasController.drawLineViaStandardFormAlgebraicString(PLA.hypothesisLineAsStandardFormAlgebraicString);
+                }
+            ).catch(
+                (error) => {
+                    //TODO
+                }
+            );
         }
-    ).catch(
-        (error) => {
-            //TODO
-        }
-    );
+    }
+}
+
+function drawLineFromSlopeString(string) {
+    canvasController.drawLineViaSlopeInterceptFormAlgebraicString(string);
+}
+
+// I have come to learn that regular expression objects are stateful. This is, apparently, very useful. Not in my eyes, this caused me a lot of grief. This is how I eliminate the state for consistent results.
+function resetRegularExpression(regularExpression) {
+    regularExpression.lastIndex = 0;
+    return regularExpression;
+}
+
+function generateRandomTestData() {
+    let output = "TRAINING DATA:";
+
+    for (let i = 0; i < 25; i++) {
+        output += " (A, ";
+        output += (Math.floor(Math.random() * 50) * (Math.random() >= 0.5 ? 1 : -1)).toString();
+        output += ", ";
+        output += (Math.floor(Math.random() * 50) * (Math.random() >= 0.5 ? 1 : -1)).toString();
+        output += ")";
+    }
+
+    for (let i = 0; i < 25; i++) {
+        output += " (B, ";
+        output += (Math.floor(Math.random() * 50) * (Math.random() >= 0.5 ? 1 : -1)).toString();
+        output += ", ";
+        output += (Math.floor(Math.random() * 50) * (Math.random() >= 0.5 ? 1 : -1)).toString();
+        output += ")";
+    }
+
+    output += "; TESTING DATA:";
+
+    for (let i = 0; i < 30; i++) {
+        output += " (";
+        output += (Math.floor(Math.random() * 50) * (Math.random() >= 0.5 ? 1 : -1)).toString();
+        output += ", ";
+        output += (Math.floor(Math.random() * 50) * (Math.random() >= 0.5 ? 1 : -1)).toString();
+        output += ")";
+    }
+
+    console.log(output);
+}
+
+function changeActionButtonText(to) {
+    console.log(to);
+    $("#pla-simulator-run-button").html(to);
 }

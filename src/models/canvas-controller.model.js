@@ -158,15 +158,24 @@ class CanvasController {
         this.canvas.height = height;
 
         this.setCoordinatePlaneGlobals();
-
-        //TODO Clean
-        // canvasController.drawLineViaStandardFormAlgebraicString("-1x+3.6y+17.3=0");
-
-        // canvasController.drawLineViaSlopeInterceptFormAlgebraicString("y=0x+0");
     }
 
     setStrokeStyle(color) {
         this.ctx.strokeStyle = color
+    }
+
+    drawPointAt(text, position) {
+        let pixelRatio = this.centerMiddleCoordinate.x / displayedAxisLimit;
+
+        if (pixelRatio === Infinity) {
+            pixelRatio = 0;
+        }
+
+        this.ctx.strokeText(text, (this.canvas.width / 2) + (pixelRatio * position.x) - 1, (this.canvas.height / 2) + (pixelRatio * position.y) + 4);
+    }
+
+    drawTextAt(text, position) {
+        this.ctx.strokeText(text, position.x, position.y);
     }
 
     drawLineViaFromTo(from, to) {
@@ -189,7 +198,7 @@ class CanvasController {
     }
 
     isStandardFormAlgebraicString(standardFormAlgebraicString) {
-        return /^-?\d+(\.(\d)+)?(e-?\d+(\.(\d)+)?)?[xX]\+-?\d+(\.(\d)+)?(e-?\d+(\.(\d)+)?)?[yY]\+-?\d+(\.(\d)+)?(e-?\d+(\.(\d)+)?)?=0$/.exec(standardFormAlgebraicString.replace(/\s+/g, ''));
+        return /^(-?\d+(\.(\d)+)?(e-?\d+(\.(\d)+)?)?)[xX]\+(-?\d+(\.(\d)+)?(e-?\d+(\.(\d)+)?)?)[yY]\+(-?\d+(\.(\d)+)?(e-?\d+(\.(\d)+)?)?)=0$/.exec(standardFormAlgebraicString.replace(/\s+/g, ''));
     }
 
     standardFormAlgebraicStringDoesNotViolateBiasRule(standardFormAlgebraicString) {
@@ -209,11 +218,50 @@ class CanvasController {
 
     convertStandardFormAlgebraicStringToSlopeInterceptFormAlgebraicString(standardFormAlgebraicString) {
         standardFormAlgebraicString = standardFormAlgebraicString.replace(/\s+/g, '');
-        let regexResult = /^(-?\d+(\.(\d)+)?(e-?\d+(\.(\d)+)?)?)[xX]\+(-?\d+(\.(\d)+)?(e-?\d+(\.(\d)+)?)?)[yY]\+(-?\d+(\.(\d)+)?(e-?\d+(\.(\d)+)?)?)=0$/.exec(standardFormAlgebraicString);
+        let regexResult = /^((-)?\d+(\.(\d)+)?(e-?\d+(\.(\d)+)?)?)[xX]\+((-)?\d+(\.(\d)+)?(e-?\d+(\.(\d)+)?)?)[yY]\+((-)?\d+(\.(\d)+)?(e-?\d+(\.(\d)+)?)?)=0$/.exec(standardFormAlgebraicString);
 
-        let A = regexResult[1];
-        let B = regexResult[7];
-        let C = regexResult[13];
+        let IS_VERY_BIG = [false, false, false];
+        let IS_VERY_SMALL = [false, false, false];
+        let IS_NEGATIVE = [1, 1, 1];
+
+        if (regexResult[2]) {
+            IS_NEGATIVE[0] = -1;
+        }
+        if (regexResult[9]) {
+            IS_NEGATIVE[1] = -1;
+        }
+        if (regexResult[16]) {
+            IS_NEGATIVE[2] = -1;
+        }
+
+        if (regexResult[5]) {
+            if (regexResult[5].match(/-/)) {
+                IS_VERY_SMALL[0] = true;
+            } else {
+                IS_VERY_BIG[0] = true;
+            }
+        }
+
+        if (regexResult[12]) {
+            if (regexResult[12].match(/-/)) {
+                IS_VERY_SMALL[1] = true;
+            } else {
+                IS_VERY_BIG[1] = true;
+            }
+        }
+
+        if (regexResult[19]) {
+            if (regexResult[19].match(/-/)) {
+                IS_VERY_SMALL[2] = true;
+            } else {
+                IS_VERY_BIG[2] = true;
+            }
+        }
+
+        let A = IS_VERY_BIG[0] ? (90000000 * IS_NEGATIVE[0]) : (IS_VERY_SMALL[0] ? (0.00000001 * IS_NEGATIVE[0]) : parseFloat(regexResult[1]));
+        let B = IS_VERY_BIG[1] ? (90000000 * IS_NEGATIVE[1]) : (IS_VERY_SMALL[1] ? (0.00000001 * IS_NEGATIVE[1]) : parseFloat(regexResult[8]));
+        let C = IS_VERY_BIG[2] ? (90000000 * IS_NEGATIVE[2]) : (IS_VERY_SMALL[2] ? (0.00000001 * IS_NEGATIVE[2]) : parseFloat(regexResult[15]));
+
 
         let M = (-1 * A) / B;
         let D = (-1 * C) / B;

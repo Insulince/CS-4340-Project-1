@@ -11,9 +11,11 @@
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
 
     <script src="./src/main.js"></script>
-    <script src="./src/canvas-controller.js"></script>
-    <script src="./src/util.js"></script>
-    <script src="./src/perceptron-learning-algorithm.js"></script>
+    <script src="src/models/canvas-controller.model.js"></script>
+    <script src="src/models/classification.model.js"></script>
+    <script src="src/models/offline-two-dimensional-perceptron-learning-algorithm.model.js"></script>
+    <script src="src/models/two-dimensional-feature-vector.model.js"></script>
+    <script src="src/models/two-dimensional-feature-weights.model.js"></script>
 </head>
 <body onload="setupPage(); resize();" onresize="resize();">
 <div class="container-fluid">
@@ -88,6 +90,8 @@
             <div class="row">
                 <div class="bordered col-md-12">
                     History
+                    <input id="swag" type="text">
+                    <button onclick="drawLineFromSlopeString($('#swag').val())"></button>
                 </div>
             </div>
         </div>
