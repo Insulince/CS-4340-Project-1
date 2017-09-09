@@ -19,7 +19,7 @@ function setupPage() {
 
     changeActionButtonText("Run Training Phase");
     disableRunPLASimulatorButton();
-    fillDataInputWrapper();
+    fillDataInputWrapper('preset');
 }
 
 function resize() {
@@ -66,9 +66,8 @@ function disableRunPLASimulatorButton() {
     );
 }
 
-function fillDataInputWrapper() {
+function fillDataInputWrapper(selectedInputMethod) {
     let dataInputWrapper = $("#data-input-wrapper");
-    let selectedInputMethod = $('input[name=data-input-method]:checked', '#data-input-selection-form').val();
 
     switch (selectedInputMethod) {
         case "preset":
@@ -107,24 +106,30 @@ function loadInputDataIntoPLASimulator() {
 
                 let inputData = parseInputData(fetchedData);
                 let options = {
-                    maximumIterations: 100,
-                    learningRate: 0.1,
-                    theta: 0,
-                    advanceRate: 100,
-                    classificationOne: new Classification("A", "•", "#00ff00"),
-                    classificationTwo: new Classification("B", "•", "#ff0000"),
-                    onAdvance: () => {
-                        console.log("Advanced.");
-                    },
-                    onComplete: () => {
-                        console.log("Completed.");
-                    }
+                    maximumIterations: parseFloat($('#maximum-iterations').val()),
+                    learningRate: parseFloat($('#learning-rate').val()),
+                    theta: parseFloat($('#theta').val()),
+                    advanceRate: parseFloat($('#speed').val()),
+                    classificationOne: new Classification("A", $('#class-A-symbol').val(), $('#class-A-color').val()),
+                    classificationTwo: new Classification("B", $('#class-B-symbol').val(), $('#class-B-color').val()),
+                    onAdvanceTraining: onAdvanceTraining.bind(this),
+                    onAdvanceTesting: onAdvanceTesting.bind(this),
+                    onComplete: onComplete.bind(this),
+                    onStatusChange: onStatusChange.bind(this)
                 };
 
                 getAxisLimits(inputData.trainingData, inputData.testingData);
                 displayAxisLimits();
 
+                if (PLA) {
+                    clearInterval(PLA.interval);
+                }
+
                 PLA = new OfflineTwoDimensionalPerceptronLearningAlgorithmForBinaryClassification(canvasController, inputData, options);
+
+                PLA.hypothesisLineAsStandardFormAlgebraicString = "undefined";
+
+                onAdvanceTraining();
 
                 enableRunPLASimulatorButton();
             } else {
@@ -137,6 +142,78 @@ function loadInputDataIntoPLASimulator() {
             //TODO
         }
     );
+}
+
+function onAdvanceTraining() {
+    $("#training-iteration-detail-value").html(PLA.trainingIteration);
+    $("#bounding-equation-detail-value").html(PLA.hypothesisLineAsStandardFormAlgebraicString);
+    $("#testing-iteration-detail-value").html(PLA.testingIteration);
+    $("#class-A-vectors-detail-value").html(PLA.getClassAFeatures());
+    $("#class-B-vectors-detail-value").html(PLA.getClassBFeatures());
+    $("#classified-vectors-detail-value").html(PLA.getClassifiedTestingFeatures() + " of " + PLA.testingTwoDimensionalFeatureVectors.length);
+}
+
+function onAdvanceTesting() {
+    $("#training-iteration-detail-value").html(PLA.trainingIteration);
+    $("#bounding-equation-detail-value").html(PLA.hypothesisLineAsStandardFormAlgebraicString);
+    $("#testing-iteration-detail-value").html(PLA.testingIteration);
+    $("#class-A-vectors-detail-value").html(PLA.getClassAFeatures());
+    $("#class-B-vectors-detail-value").html(PLA.getClassBFeatures());
+    $("#classified-vectors-detail-value").html(PLA.getClassifiedTestingFeatures() + " of " + PLA.testingTwoDimensionalFeatureVectors.length);
+}
+
+function onComplete() {
+    let newRow = `
+        <tr>
+            <td>` + PLA.trainingIteration + `</td>
+            <td>` + PLA.testingIteration + `</td>
+            <td>` + PLA.hypothesisLineAsStandardFormAlgebraicString + `</td>
+            <td>` + PLA.getClassAFeatures() + `</td>
+            <td>` + PLA.getClassBFeatures() + `</td>
+            <td><div style="font-size: 8px; max-height: 20px; overflow-y: scroll">TRAINING DATA: ` + PLA.inputData.trainingData.map(
+        (trainingDatum) => {
+            return "(" + trainingDatum[0] + ", " + trainingDatum[1] + ", " + trainingDatum[2] + ")";
+        }
+    ).join(" ") + `; TESTING DATA: ` + PLA.inputData.testingData.map(
+        (testingDatum) => {
+            return "(" + testingDatum[1] + ", " + testingDatum[2] + ")";
+        }
+    ).join(" ") + `</div></td>
+        </tr>
+    `;
+
+    console.log("looks like we made it");
+    $("#history-table").html($("#history-table").html() + newRow);
+}
+
+function onStatusChange(newStatus) {
+    changeStatusDisplayText(newStatus);
+    switch (newStatus) {
+        case "Not Started":
+            changeActionButtonText("Run Training Phase");
+            enableRunPLASimulatorButton();
+            break;
+        case "Training":
+            disableRunPLASimulatorButton();
+            break;
+        case "Testing":
+            disableRunPLASimulatorButton();
+            break;
+        case "Finished Training":
+            enableRunPLASimulatorButton();
+            break;
+        case "Finished Testing":
+            changeActionButtonText("Reset this simulation");
+            enableRunPLASimulatorButton();
+            break;
+        case "Error - Training":
+        case "Error - Testing":
+            disableRunPLASimulatorButton();
+            break;
+        default:
+            disableRunPLASimulatorButton();
+            throw new Error("PLA Simulator status changed to unrecognized status \"" + newStatus + "\".");
+    }
 }
 
 function retrieveInputDataFromInputMethod() {
@@ -375,6 +452,12 @@ function runPLASimulator() {
                     //TODO
                 }
             );
+        } else if (PLA.status === "Finished Testing") {
+            PLA.reset();
+            canvasController.clear();
+            drawBasePLASimulatorElements();
+            displayAxisLimits();
+            PLA.plotTrainingTwoDimensionalFeatureVectors();
         }
     }
 }
@@ -422,6 +505,9 @@ function generateRandomTestData() {
 }
 
 function changeActionButtonText(to) {
-    console.log(to);
     $("#pla-simulator-run-button").html(to);
+}
+
+function changeStatusDisplayText(to) {
+    $("#status-display").html(to);
 }

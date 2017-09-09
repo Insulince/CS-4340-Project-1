@@ -16,6 +16,13 @@
     <script src="src/models/offline-two-dimensional-perceptron-learning-algorithm.model.js"></script>
     <script src="src/models/two-dimensional-feature-vector.model.js"></script>
     <script src="src/models/two-dimensional-feature-weights.model.js"></script>
+
+    <style>
+        #history-table, #history-table tr, #history-table tr th, #history-table tr td {
+            border: 1px solid black;
+            border-collapse: collapse;
+        }
+    </style>
 </head>
 <body onload="setupPage(); resize();" onresize="resize();">
 <div class="container-fluid">
@@ -38,7 +45,10 @@
                             <button id="pla-simulator-run-button" class="bordered max-width btn" onclick="runPLASimulator()" disabled="disabled">Run</button>
                         </div>
                         <div class="bordered col-md-6">
-                            <div id="status-wrapper">Status</div>
+                            <div id="status-wrapper">
+                                <p>Status</p>
+                                <p id="status-display"></p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -47,42 +57,90 @@
                         <div class="bordered col-md-12">
                             <h4 class="center-me">Parameters</h4>
                             <div class="row">
-                                <div class="col-md-6">
+                                <div class="bordered col-md-6">
                                     <p>Classes</p>
                                     <div class="row">
-                                        <div class="col-md-6">
-                                            <p>Class 1</p>
+                                        <div class="bordered col-md-6">
+                                            <p>Class A</p>
                                             <label for="class-A-symbol">Symbol</label>
-                                            <input id="class-A-symbol" name="class-A-symbol" type="text" value="•"/>
+                                            <input id="class-A-symbol" name="class-A-symbol" style="width: 30px;" type="text" value="•"/>
+                                            <br/>
                                             <label for="class-A-color">Color</label>
                                             <input id="class-A-color" name="class-A-color" type="color" value="#00ff00"/>
                                         </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <p>Class 2</p>
-                                        <label for="class-B-symbol">Symbol</label>
-                                        <input id="class-B-symbol" name="class-B-symbol" type="text" value="•"/>
-                                        <label for="class-B-color">Color</label>
-                                        <input id="class-B-color" name="class-B-color" type="color" value="#ff0000"/>
+                                        <div class="bordered col-md-6">
+                                            <p>Class B</p>
+                                            <label for="class-B-symbol">Symbol</label>
+                                            <input id="class-B-symbol" name="class-B-symbol" style="width: 30px;" type="text" value="•"/>
+                                            <br/>
+                                            <label for="class-B-color">Color</label>
+                                            <input id="class-B-color" name="class-B-color" type="color" value="#ff0000"/>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="col-md-6">
+                                <div class="bordered col-md-6">
                                     <p>Data</p>
                                     <form id="data-input-selection-form">
-                                        <input type="radio" name="data-input-method" value="preset" checked="checked" onclick="fillDataInputWrapper();"/> Preset
-                                        <input type="radio" name="data-input-method" value="manual" onclick="fillDataInputWrapper();"/> Manual
-                                        <input type="radio" name="data-input-method" value="file" onclick="fillDataInputWrapper();"/> File
+                                        <input type="radio" name="data-input-method" value="preset" checked="checked" onclick="fillDataInputWrapper('preset');"/> Preset
+                                        <input type="radio" name="data-input-method" value="manual" onclick="fillDataInputWrapper('manual');"/> Manual
+                                        <input type="radio" name="data-input-method" value="file" onclick="fillDataInputWrapper('file');"/> File
                                     </form>
                                     <div id="data-input-wrapper"></div>
-                                    <button id="confirm-data" onclick="loadInputDataIntoPLASimulator()">Choose This Data</button>
                                 </div>
                             </div>
-
+                            <div class="row">
+                                <div class="bordered col-md-12">
+                                    <p>PLA Prameter</p>
+                                    <label for="maximum-iterations">Maximum Training Iterations</label>
+                                    <input id="maximum-iterations" name="maximum-iterations" type="text" value="100"/>
+                                    <br/>
+                                    <label for="learning-rate">Learning Rate</label>
+                                    <input id="learning-rate" name="learning-rate" type="text" value="0.1"/>
+                                    <br/>
+                                    <label for="theta">Theta</label>
+                                    <input id="theta" name="theta" type="text" value="0"/>
+                                    <br/>
+                                    <label for="speed">Speed</label>
+                                    <input id="speed" name="speed" type="text" value="100"/>
+                                    <br/>
+                                </div>
+                            </div>
+                            <button id="confirm-data" onclick="loadInputDataIntoPLASimulator(); changeActionButtonText('Run Training Phase')">Choose This Data</button>
                         </div>
                     </div>
                     <div class="row">
                         <div class="bordered col-md-12">
                             <h4 class="center-me">Details</h4>
+                            <div class="bordered row">
+                                <div class="col-md-6">
+                                    <div class="detail">
+                                        <p id="training-iteration-detail-label" class="detail-label">Training Iteration</p>
+                                        <p id="training-iteration-detail-value" class="detail-value">0</p>
+                                    </div>
+                                    <div class="detail">
+                                        <p id="testing-iteration-detail-label" class="detail-label">Testing Iteration</p>
+                                        <p id="testing-iteration-detail-value" class="detail-value">0</p>
+                                    </div>
+                                    <div class="detail">
+                                        <p id="bounding-equation-detail-label" class="detail-label">Bounding Equation</p>
+                                        <p id="bounding-equation-detail-value" class="detail-value">undefined</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="detail">
+                                        <p id="class-A-vectors-detail-label" class="detail-label">Class A Vectors</p>
+                                        <p id="class-A-vectors-detail-value" class="detail-value">0</p>
+                                    </div>
+                                    <div class="detail">
+                                        <p id="class-B-vectors-detail-label" class="detail-label">Class B Vectors</p>
+                                        <p id="class-B-vectors-detail-value" class="detail-value">0</p>
+                                    </div>
+                                    <div class="detail">
+                                        <p id="classified-vectors-detail-label" class="detail-label">Classified Vectors</p>
+                                        <p id="classified-vectors-detail-value" class="detail-value">0 of 0</p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -90,8 +148,16 @@
             <div class="row">
                 <div class="bordered col-md-12">
                     History
-                    <input id="swag" type="text">
-                    <button onclick="drawLineFromSlopeString($('#swag').val())"></button>
+                    <table id="history-table">
+                        <tr>
+                            <th>Training Iterations</th>
+                            <th>Testing Iterations</th>
+                            <th>Bounding Equation</th>
+                            <th>Class A Vectors</th>
+                            <th>Class B Vectors</th>
+                            <th>Data</th>
+                        </tr>
+                    </table>
                 </div>
             </div>
         </div>

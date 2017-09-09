@@ -18,10 +18,13 @@ class OfflineTwoDimensionalPerceptronLearningAlgorithmForBinaryClassification {
         this._classificationOne = options.classificationOne;
         this._classificationTwo = options.classificationTwo;
 
-        this._onAdvance = options.onAdvance;
+        this._onAdvanceTraining = options.onAdvanceTraining;
+        this._onAdvanceTesting = options.onAdvanceTesting;
         this._onComplete = options.onComplete;
+        this._onStatusChange = options.onStatusChange;
 
-        this._iteration = 0;
+        this._trainingIteration = 0;
+        this._testingIteration = 0;
         this._status = "Not Started";
         this._hypothesisLineAsStandardFormAlgebraicString = undefined;
 
@@ -79,16 +82,28 @@ class OfflineTwoDimensionalPerceptronLearningAlgorithmForBinaryClassification {
         return this._classificationTwo;
     }
 
-    get onAdvance() {
-        return this._onAdvance;
+    get onAdvanceTraining() {
+        return this._onAdvanceTraining;
+    }
+
+    get onAdvanceTesting() {
+        return this._onAdvanceTesting;
     }
 
     get onComplete() {
         return this._onComplete;
     }
 
-    get iteration() {
-        return this._iteration;
+    get onStatusChange() {
+        return this._onStatusChange;
+    }
+
+    get trainingIteration() {
+        return this._trainingIteration;
+    }
+
+    get testingIteration() {
+        return this._testingIteration;
     }
 
     get status() {
@@ -163,20 +178,36 @@ class OfflineTwoDimensionalPerceptronLearningAlgorithmForBinaryClassification {
         this._classificationTwo = classificationTwo;
     }
 
-    set onAdvance(onAdvance) {
-        this._onAdvance = onAdvance;
+    set onAdvanceTraining(onAdvanceTraining) {
+        this._onAdvanceTraining = onAdvanceTraining;
+    }
+
+    set onAdvanceTesting(onAdvanceTesting) {
+        this._onAdvanceTesting = onAdvanceTesting;
     }
 
     set onComplete(onComplete) {
         this._onComplete = onComplete;
     }
 
-    set iteration(iteration) {
-        this._iteration = iteration;
+    set onStatusChange(onStatusChange) {
+        this._onStatusChange = onStatusChange;
+    }
+
+    set trainingIteration(trainingIteration) {
+        this._trainingIteration = trainingIteration;
+    }
+
+    set testingIteration(testingIteration) {
+        this._testingIteration = testingIteration;
     }
 
     set status(status) {
         this._status = status;
+
+        if (this.onStatusChange) {
+            this.onStatusChange(this._status);
+        }
     }
 
     set hypothesisLineAsStandardFormAlgebraicString(hypothesisLineAsStandardFormAlgebraicString) {
@@ -205,7 +236,8 @@ class OfflineTwoDimensionalPerceptronLearningAlgorithmForBinaryClassification {
 
     reset() {
         this.status = "Not Started";
-        this.iteration = 0;
+        this.trainingIteration = 0;
+        this.testingIteration = 0;
         this.hypothesisLineAsStandardFormAlgebraicString = undefined;
 
         this.twoDimensionalFeatureWeights = new TwoDimensionalFeatureWeights(OfflineTwoDimensionalPerceptronLearningAlgorithmForBinaryClassification.randomNumber(0, 1), OfflineTwoDimensionalPerceptronLearningAlgorithmForBinaryClassification.randomNumber(0, 1), OfflineTwoDimensionalPerceptronLearningAlgorithmForBinaryClassification.randomNumber(0, 1));
@@ -214,6 +246,66 @@ class OfflineTwoDimensionalPerceptronLearningAlgorithmForBinaryClassification {
         this.classifiedTestingTwoDimensionalFeatureVectors = [];
 
         this.loadInputData();
+        this.hypothesisLineAsStandardFormAlgebraicString = "undefined";
+        this.onAdvanceTraining();
+    }
+
+    getClassAFeatures() {
+        let classAFeatures = 0;
+
+        this.trainingTwoDimensionalFeatureVectors.forEach(
+            (trainingTwoDimensionalFeatureVector) => {
+                if (trainingTwoDimensionalFeatureVector.classification.name === this.classificationOne.name) {
+                    classAFeatures++;
+                }
+            }
+        );
+
+        this.testingTwoDimensionalFeatureVectors.forEach(
+            (testingTwoDimensionalFeatureVector) => {
+                if (testingTwoDimensionalFeatureVector.classification.name === this.classificationOne.name) {
+                    classAFeatures++;
+                }
+            }
+        );
+
+        return classAFeatures;
+    }
+
+    getClassBFeatures() {
+        let classBFeatures = 0;
+
+        this.trainingTwoDimensionalFeatureVectors.forEach(
+            (trainingTwoDimensionalFeatureVector) => {
+                if (trainingTwoDimensionalFeatureVector.classification.name === this.classificationTwo.name) {
+                    classBFeatures++;
+                }
+            }
+        );
+
+        this.testingTwoDimensionalFeatureVectors.forEach(
+            (testingTwoDimensionalFeatureVector) => {
+                if (testingTwoDimensionalFeatureVector.classification.name === this.classificationTwo.name) {
+                    classBFeatures++;
+                }
+            }
+        );
+
+        return classBFeatures;
+    }
+
+    getClassifiedTestingFeatures() {
+        let classifiedTestingFeatures = 0;
+
+        this.testingTwoDimensionalFeatureVectors.forEach(
+            (testingTwoDimensionalFeatureVector) => {
+                if (testingTwoDimensionalFeatureVector.classification.name !== "") {
+                    classifiedTestingFeatures++;
+                }
+            }
+        );
+
+        return classifiedTestingFeatures;
     }
 
     loadInputData() {
@@ -245,6 +337,7 @@ class OfflineTwoDimensionalPerceptronLearningAlgorithmForBinaryClassification {
                     () => {
                         try {
                             this.advanceOneTrainingPass();
+                            this.onAdvanceTraining();
 
                             if (this.status !== "Training") {
                                 clearInterval(this.interval);
@@ -264,7 +357,7 @@ class OfflineTwoDimensionalPerceptronLearningAlgorithmForBinaryClassification {
     }
 
     advanceOneTrainingPass() {
-        this.iteration++;
+        this.trainingIteration++;
         let globalError = 0;
         let localError = 0;
 
@@ -279,9 +372,9 @@ class OfflineTwoDimensionalPerceptronLearningAlgorithmForBinaryClassification {
             }
         );
 
-        console.log("Iteration: " + this.iteration);
+        console.log("Iteration: " + this.trainingIteration);
 
-        this.hypothesisLineAsStandardFormAlgebraicString = this.twoDimensionalFeatureWeights.weightX + "x+" + this.twoDimensionalFeatureWeights.weightY + "y+" + this.twoDimensionalFeatureWeights.weightBias + "=0";
+        this.hypothesisLineAsStandardFormAlgebraicString = this.twoDimensionalFeatureWeights.weightX.toFixed(2) + "x+" + this.twoDimensionalFeatureWeights.weightY.toFixed(2) + "y+" + this.twoDimensionalFeatureWeights.weightBias.toFixed(2) + "=0";
         this.drawHypothesisLine();
 
         if (this.endConditionSatisfied(globalError)) {
@@ -293,16 +386,18 @@ class OfflineTwoDimensionalPerceptronLearningAlgorithmForBinaryClassification {
 
     runTesting() {
         this.status = "Testing";
-        this.iteration = 0;
+        this.testingIteration = 0;
         return new Promise(
             (resolve, reject) => {
                 this.interval = setInterval(
                     () => {
                         try {
                             this.advanceOneTestingPass();
+                            this.onAdvanceTesting();
 
                             if (this.status !== "Testing") {
                                 clearInterval(this.interval);
+                                this.onComplete();
                                 resolve();
                             }
                         } catch (e) {
@@ -321,14 +416,15 @@ class OfflineTwoDimensionalPerceptronLearningAlgorithmForBinaryClassification {
     advanceOneTestingPass() {
         this.plotClassifiedTestingTwoDimensionalFeatureVectors();
 
-        this.classifiedTestingTwoDimensionalFeatureVectors.push(this.classifyTwoDimensionalFeatureVector(this.testingTwoDimensionalFeatureVectors[this.iteration]));
+        this.classifiedTestingTwoDimensionalFeatureVectors.push(this.classifyTwoDimensionalFeatureVector(this.testingTwoDimensionalFeatureVectors[this.testingIteration]));
 
         this.plotTwoDimensionalFeatureVector(this.classifiedTestingTwoDimensionalFeatureVectors[this.classifiedTestingTwoDimensionalFeatureVectors.length - 1], "#0000ff");
 
-        this.iteration++;
-        console.log("Classified testing vector " + this.iteration + " of " + this.testingTwoDimensionalFeatureVectors.length);
+        this.testingIteration++;
+        console.log("Classified testing vector " + this.testingIteration + " of " + this.testingTwoDimensionalFeatureVectors.length);
 
         if (this.classifiedTestingTwoDimensionalFeatureVectors.length === this.testingTwoDimensionalFeatureVectors.length) {
+            console.log("Yuh?");
             this.status = "Finished Testing";
 
             clearInterval(this.interval);
@@ -364,7 +460,7 @@ class OfflineTwoDimensionalPerceptronLearningAlgorithmForBinaryClassification {
     }
 
     endConditionSatisfied(globalError) {
-        return globalError === 0 || this.iteration > this.maximumIterations;
+        return globalError === 0 || this.trainingIteration > this.maximumIterations;
     }
 
     determineClassification(featureWeights, twoDimensionalFeatureVector) {
