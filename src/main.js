@@ -135,7 +135,11 @@ function getRandomHTML() {
 `;
 }
 
-function randomNumber(lowerBound, upperBound) {
+function randomFloat(lowerBound, upperBound) {
+    return lowerBound + (Math.random() * (upperBound - lowerBound));
+}
+
+function randomInteger(lowerBound, upperBound) {
     if (lowerBound >= 0) { //If only positive values...
         return Math.floor(lowerBound + (Math.random() * (upperBound - lowerBound + 1)));
     } else {
@@ -153,7 +157,7 @@ function randomNumber(lowerBound, upperBound) {
         } else {
             let ratio = quantityPositiveValues / totalValues;
 
-            if (Math.random() > ratio) { //This makes it so we should still get random numbers of each class (positive or negative) proportional to how many are actually there. I.e. "randomNumber(-10, 100)" should output positive numbers 10 times as often as negative numbers.
+            if (Math.random() > ratio) { //This makes it so we should still get random numbers of each class (positive or negative) proportional to how many are actually there. I.e. "randomInteger(-10, 100)" should output positive numbers 10 times as often as negative numbers.
                 return positiveCandidate;
             } else {
                 return negativeCandidate;
@@ -173,9 +177,9 @@ function loadInputDataIntoPLASimulator() {
                 let weights;
                 if ($("#randomize-initial-weights").prop('checked')) {
                     weights = {
-                        weightX: randomNumber(0, 1),
-                        weightY: randomNumber(0, 1),
-                        weightBias: randomNumber(0, 1)
+                        weightX: randomFloat(0, 1),
+                        weightY: randomFloat(0, 1),
+                        weightBias: randomFloat(0, 1)
                     };
                 } else {
                     weights = {
@@ -437,11 +441,42 @@ function getRandomDataInput() {
 
     if (shouldBeLinearlySeparable) {
         let aPoints = [];
+        let bPoints = [];
 
-        // while () {
-        //     let potentialAPoint
-        //     pointIsAboveOrOnSlopeInterceptFormLine();
-        // }
+        while (aPoints.length < quantityA && bPoints.length < quantityB) {
+            let potentialAPoint = {
+                x: randomInteger(xRange.lower, xRange.upper),
+                y: randomInteger(yRange.lower, yRange.upper)
+            };
+
+            if (pointIsAboveSlopeInterceptFormLine(potentialAPoint, linearlySeperableAlongLineInSlopeInterceptForm)) {
+                aPoints.push(potentialAPoint);
+            } else {
+                bPoints.push(potentialAPoint);
+            }
+        }
+
+        while (aPoints.length < quantityA) {
+            let potentialAPoint = {
+                x: randomInteger(xRange.lower, xRange.upper),
+                y: randomInteger(yRange.lower, yRange.upper)
+            };
+
+            if (pointIsAboveSlopeInterceptFormLine(potentialAPoint, linearlySeperableAlongLineInSlopeInterceptForm)) {
+                aPoints.push(potentialAPoint);
+            }
+        }
+
+        while (bPoints.length < quantityB) {
+            let potentialBPoint = {
+                x: randomInteger(xRange.lower, xRange.upper),
+                y: randomInteger(yRange.lower, yRange.upper)
+            };
+
+            if (!pointIsAboveSlopeInterceptFormLine(potentialBPoint, linearlySeperableAlongLineInSlopeInterceptForm)) {
+                bPoints.push(potentialBPoint);
+            }
+        }
 
         for (let i = 0; i < quantityA; i++) {
             dataString += " (";
@@ -449,7 +484,7 @@ function getRandomDataInput() {
             dataString += ", ";
             dataString += aPoints[i].x;
             dataString += ", ";
-            dataString += aPoints.y;
+            dataString += aPoints[i].y;
             dataString += ")"
         }
 
@@ -462,24 +497,14 @@ function getRandomDataInput() {
             dataString += bPoints[i].y;
             dataString += ")"
         }
-
-        dataString += "; TESTING DATA:";
-
-        for (let i = 0; i < quantityTest; i++) {
-            dataString += " (";
-            dataString += randomNumber(xRange.lower, xRange.upper);
-            dataString += ", ";
-            dataString += randomNumber(yRange.lower, yRange.upper);
-            dataString += ")"
-        }
     } else {
         for (let i = 0; i < quantityA; i++) {
             dataString += " (";
             dataString += "A";
             dataString += ", ";
-            dataString += randomNumber(xRange.lower, xRange.upper);
+            dataString += randomInteger(xRange.lower, xRange.upper);
             dataString += ", ";
-            dataString += randomNumber(yRange.lower, yRange.upper);
+            dataString += randomInteger(yRange.lower, yRange.upper);
             dataString += ")"
         }
 
@@ -487,24 +512,36 @@ function getRandomDataInput() {
             dataString += " (";
             dataString += "B";
             dataString += ", ";
-            dataString += randomNumber(xRange.lower, xRange.upper);
+            dataString += randomInteger(xRange.lower, xRange.upper);
             dataString += ", ";
-            dataString += randomNumber(yRange.lower, yRange.upper);
-            dataString += ")"
-        }
-
-        dataString += "; TESTING DATA:";
-
-        for (let i = 0; i < quantityTest; i++) {
-            dataString += " (";
-            dataString += randomNumber(xRange.lower, xRange.upper);
-            dataString += ", ";
-            dataString += randomNumber(yRange.lower, yRange.upper);
+            dataString += randomInteger(yRange.lower, yRange.upper);
             dataString += ")"
         }
     }
 
+    dataString += "; TESTING DATA:";
+
+    for (let i = 0; i < quantityTest; i++) {
+        dataString += " (";
+        dataString += randomInteger(xRange.lower, xRange.upper);
+        dataString += ", ";
+        dataString += randomInteger(yRange.lower, yRange.upper);
+        dataString += ")"
+    }
+
     return dataString
+}
+
+function pointIsAboveSlopeInterceptFormLine(point, slopeInterceptFormLine) {
+    let slopeInterceptFormLineWithoutSpaces = slopeInterceptFormLine.replace(/\s+/g, '');
+    let regexResult = /^[yY]=(-?\d+(\.(\d)+)?(e-?\d+(\.(\d)+)?)?)[xX]\+(-?\d+(\.(\d)+)?(e-?\d+(\.(\d)+)?)?)$/.exec(slopeInterceptFormLineWithoutSpaces);
+
+    let M = parseFloat(regexResult[1]);
+    let B = parseFloat(regexResult[7]);
+
+    let yAtProvidedX = M * point.x + B;
+
+    return point.y > yAtProvidedX;
 }
 
 function parseInputData(rawData) {
