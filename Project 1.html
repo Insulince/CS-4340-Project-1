@@ -313,6 +313,8 @@
             <td>` + PLA.getClassAFeatures() + `</td>
             <td>` + PLA.getClassBFeatures() + `</td>
             <td>X: ` + PLA.weights.weightX.toFixed(2) + `, Y: ` + PLA.weights.weightY.toFixed(2) + `, Bias: ` + PLA.weights.weightBias.toFixed(2) + `</td>
+            <td>` + PLA.twoDimensionalFeatureWeights.totalWeightUpdates + `</td>
+            <td>` + PLA.misclassificationError + `</td>
             <td><div style="font-size: 8px; max-height: 70px; overflow-y: scroll">TRAINING DATA: ` + PLA.inputData.trainingData.map(
                 (trainingDatum) => {
                     return "(" + trainingDatum[0] + ", " + trainingDatum[1] + ", " + trainingDatum[2] + ")";
@@ -663,7 +665,7 @@
 
         function displayAxisLimits() {
             if (displayedAxisLimit) {
-                canvasController.ctx.font = "14px sans-serif";
+                canvasController.ctx.font = "14px Courier New";
                 canvasController.setStrokeStyle("#cccccc");
 
                 canvasController.drawTextAt("0", {x: canvasController.canvas.width / 2 + 5, y: canvasController.canvas.height / 2 - 5});
@@ -889,6 +891,10 @@
                 return this._interval;
             }
 
+            get misclassificationError() {
+                return this._misclassificationError;
+            }
+
             set canvasController(canvasController) {
                 this._canvasController = canvasController;
             }
@@ -993,11 +999,17 @@
                 this._interval = interval;
             }
 
+            set misclassificationError(misclassificationError) {
+                this._misclassificationError = misclassificationError;
+            }
+
             reset() {
                 this.status = "Not Started";
                 this.trainingIteration = 0;
                 this.testingIteration = 0;
                 this.hypothesisLineAsStandardFormAlgebraicString = undefined;
+
+                this.misclassificationError = undefined;
 
                 this.twoDimensionalFeatureWeights = new TwoDimensionalFeatureWeights(this.weights.weightX, this.weights.weightY, this.weights.weightBias);
                 this.trainingTwoDimensionalFeatureVectors = [];
@@ -1100,6 +1112,7 @@
                                     if (this.status !== "Training") {
                                         this.trainingIteration--;
                                         clearInterval(this.interval);
+                                        this.misclassificationError = this.calculateMisclassificationError();
                                         resolve();
                                     }
 
@@ -1172,6 +1185,22 @@
                         );
                     }
                 );
+            }
+
+            calculateMisclassificationError() {
+                let localError = undefined;
+                let globalError = 0;
+
+                this.trainingTwoDimensionalFeatureVectors.forEach(
+                    (trainingTwoDimensionalFeatureVector) => {
+                        let predictedClassificationForCurrentVectorBasedOnCurrentWeights = this.determineClassification(this.twoDimensionalFeatureWeights, trainingTwoDimensionalFeatureVector);
+
+                        localError = this.calculateLocalError(trainingTwoDimensionalFeatureVector.classification, predictedClassificationForCurrentVectorBasedOnCurrentWeights);
+                        globalError += (localError * localError);
+                    }
+                );
+
+                return globalError;
             }
 
             advanceOneTestingPass() {
@@ -1680,6 +1709,7 @@
                 this._weightX = weightX;
                 this._weightY = weightY;
                 this._weightBias = weightBias;
+                this._totalWeightUpdates = 0;
             }
 
             get weightX() {
@@ -1694,16 +1724,27 @@
                 return this._weightBias;
             }
 
+            get totalWeightUpdates() {
+                return this._totalWeightUpdates;
+            }
+
             set weightX(weightX) {
                 this._weightX = weightX;
+                this._totalWeightUpdates++;
             }
 
             set weightY(weightY) {
                 this._weightY = weightY;
+                this._totalWeightUpdates++;
             }
 
             set weightBias(weightBias) {
                 this._weightBias = weightBias;
+                this._totalWeightUpdates++;
+            }
+
+            set totalWeightUpdates(totalWeightUpdates) {
+                this._totalWeightUpdates = totalWeightUpdates;
             }
         }
 
@@ -1741,6 +1782,10 @@
     </script>
 
     <style>
+        * {
+            font-family: "Courier New", serif;
+        }
+
         #history-table, #history-table tr, #history-table tr th, #history-table tr td {
             border: 1px solid black;
             border-collapse: collapse;
@@ -1983,6 +2028,8 @@
                             <th>A Vectors</th>
                             <th>B Vectors</th>
                             <th>Initial Weights</th>
+                            <th>Total Weight Updates</th>
+                            <th>Misclassification Error</th>
                             <th>Data</th>
                         </tr>
                     </table>
