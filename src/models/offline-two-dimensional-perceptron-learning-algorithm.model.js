@@ -12,6 +12,7 @@ class OfflineTwoDimensionalPerceptronLearningAlgorithmForBinaryClassification {
         this._maximumIterations = options.maximumIterations;
         this._learningRate = options.learningRate;
         this._theta = options.theta;
+        this._weights = options.weights;
 
         this._advanceRate = options.advanceRate;
 
@@ -28,7 +29,7 @@ class OfflineTwoDimensionalPerceptronLearningAlgorithmForBinaryClassification {
         this._status = "Not Started";
         this._hypothesisLineAsStandardFormAlgebraicString = undefined;
 
-        this._twoDimensionalFeatureWeights = new TwoDimensionalFeatureWeights(OfflineTwoDimensionalPerceptronLearningAlgorithmForBinaryClassification.randomNumber(0, 1), OfflineTwoDimensionalPerceptronLearningAlgorithmForBinaryClassification.randomNumber(0, 1), OfflineTwoDimensionalPerceptronLearningAlgorithmForBinaryClassification.randomNumber(0, 1));
+        this._twoDimensionalFeatureWeights = new TwoDimensionalFeatureWeights(this.weights.weightX, this.weights.weightY, this.weights.weightBias);
         this._trainingTwoDimensionalFeatureVectors = [];
         this._testingTwoDimensionalFeatureVectors = [];
         this._classifiedTestingTwoDimensionalFeatureVectors = [];
@@ -68,6 +69,10 @@ class OfflineTwoDimensionalPerceptronLearningAlgorithmForBinaryClassification {
 
     get theta() {
         return this._theta;
+    }
+
+    get weights() {
+        return this._weights;
     }
 
     get advanceRate() {
@@ -166,6 +171,10 @@ class OfflineTwoDimensionalPerceptronLearningAlgorithmForBinaryClassification {
         this._theta = theta;
     }
 
+    set weights(weights) {
+        this._weights = weights;
+    }
+
     set advanceRate(advanceRate) {
         this._advanceRate = advanceRate;
     }
@@ -240,7 +249,7 @@ class OfflineTwoDimensionalPerceptronLearningAlgorithmForBinaryClassification {
         this.testingIteration = 0;
         this.hypothesisLineAsStandardFormAlgebraicString = undefined;
 
-        this.twoDimensionalFeatureWeights = new TwoDimensionalFeatureWeights(OfflineTwoDimensionalPerceptronLearningAlgorithmForBinaryClassification.randomNumber(0, 1), OfflineTwoDimensionalPerceptronLearningAlgorithmForBinaryClassification.randomNumber(0, 1), OfflineTwoDimensionalPerceptronLearningAlgorithmForBinaryClassification.randomNumber(0, 1));
+        this.twoDimensionalFeatureWeights = new TwoDimensionalFeatureWeights(this.weights.weightX, this.weights.weightY, this.weights.weightBias);
         this.trainingTwoDimensionalFeatureVectors = [];
         this.testingTwoDimensionalFeatureVectors = [];
         this.classifiedTestingTwoDimensionalFeatureVectors = [];
@@ -337,12 +346,14 @@ class OfflineTwoDimensionalPerceptronLearningAlgorithmForBinaryClassification {
                     () => {
                         try {
                             this.advanceOneTrainingPass();
-                            this.onAdvanceTraining();
 
                             if (this.status !== "Training") {
+                                this.trainingIteration--;
                                 clearInterval(this.interval);
                                 resolve();
                             }
+
+                            this.onAdvanceTraining();
                         } catch (e) {
                             console.error(e);
                             clearInterval(this.interval);
@@ -424,7 +435,6 @@ class OfflineTwoDimensionalPerceptronLearningAlgorithmForBinaryClassification {
         console.log("Classified testing vector " + this.testingIteration + " of " + this.testingTwoDimensionalFeatureVectors.length);
 
         if (this.classifiedTestingTwoDimensionalFeatureVectors.length === this.testingTwoDimensionalFeatureVectors.length) {
-            console.log("Yuh?");
             this.status = "Finished Testing";
 
             clearInterval(this.interval);
@@ -432,8 +442,6 @@ class OfflineTwoDimensionalPerceptronLearningAlgorithmForBinaryClassification {
     }
 
     classifyTwoDimensionalFeatureVector(twoDimensionalFeatureVector) {
-        console.log(twoDimensionalFeatureVector);
-
         let sum = twoDimensionalFeatureVector.featureX * this.twoDimensionalFeatureWeights.weightX + twoDimensionalFeatureVector.featureY * this.twoDimensionalFeatureWeights.weightY + this.twoDimensionalFeatureWeights.weightBias;
         twoDimensionalFeatureVector.classification = (sum >= this.theta) ? this.classificationOne : this.classificationTwo;
 
@@ -521,9 +529,5 @@ class OfflineTwoDimensionalPerceptronLearningAlgorithmForBinaryClassification {
         } else {
             throw new Error("Unrecognized classifications passed to local error calculation function. Actual classification value: \"" + actualClassification.name + "\", predicted classification value: \"" + predictedClassification.name + "\".");
         }
-    }
-
-    static randomNumber(lowerBound, upperBound) {
-        return lowerBound + Math.floor(Math.random() * (upperBound - lowerBound + 1));
     }
 }

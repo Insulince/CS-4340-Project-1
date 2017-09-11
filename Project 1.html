@@ -21,13 +21,64 @@
         #history-table, #history-table tr, #history-table tr th, #history-table tr td {
             border: 1px solid black;
             border-collapse: collapse;
+            text-align: center;
+        }
+
+        /*Utility Classes*/
+        .center-me {
+            text-align: center;
+        }
+
+        .no-padding {
+            padding: 0;
+        }
+
+        .no-margin {
+            margin: 0;
+        }
+
+        .auto-padding {
+            padding: auto;
+        }
+
+        .auto-margin {
+            margin: auto;
+        }
+
+        .max-height {
+            height: 100%;
+        }
+
+        .max-width {
+            width: 100%;
+        }
+
+        .bordered {
+            border: solid 1px black;
+        }
+
+        /*CSS*/
+        #pla-simulator-wrapper {
+            padding: 0;
+        }
+
+        #pla-simulator {
+        }
+
+        #pla-simulator-run-button {
+            border-radius: 0;
+        }
+
+        table {
+            width: 100%;
+            margin-bottom: 20px;
         }
     </style>
 </head>
 <body onload="setupPage(); resize();" onresize="resize();">
-<div class="container-fluid">
+<div class="container-fluid" style="margin-bottom: 30px;">
     <div class="row">
-        <div class="bordered col-md-10 col-md-offset-1">
+        <div class=" col-md-10 col-md-offset-1">
             <div class="row">
                 <div class="col-md-12">
                     <h3 class="center-me">CMP SCI 4340 - Project #1 - Perceptron Learning Algorithm</h3>
@@ -35,84 +86,107 @@
             </div>
             <div class="row">
                 <div class="col-md-6">
-                    <div class="row">
+                    <div class="row bordered">
                         <div id="pla-simulator-wrapper" class="col-md-12">
+                            <h3 class="center-me bordered">PLA Simulator</h3>
                             <canvas id="pla-simulator" class="bordered"></canvas>
                         </div>
                     </div>
                     <div class="row">
-                        <div class="col-md-6">
-                            <button id="pla-simulator-run-button" class="bordered max-width btn" onclick="runPLASimulator()" disabled="disabled">Run</button>
-                        </div>
-                        <div class="bordered col-md-6">
-                            <div id="status-wrapper">
-                                <p>Status</p>
-                                <p id="status-display"></p>
-                            </div>
+                        <button id="pla-simulator-run-button" class=" max-width btn btn-primary" onclick="runPLASimulator()" disabled="disabled">Run</button>
+                        <div id="status-wrapper" class="center-me">
+                            <b style="display: inline-block;">Status</b>
+                            <p style="display: inline-block;" id="status-display">Not Started</p>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-6">
-                    <div class="row">
-                        <div class="bordered col-md-12">
-                            <h4 class="center-me">Parameters</h4>
-                            <div class="row">
-                                <div class="bordered col-md-6">
-                                    <p>Classes</p>
+                    <div class="row bordered">
+                        <div class=" col-md-12">
+                            <h3 class="center-me bordered">Parameters</h3>
+                            <div class="row bordered">
+                                <div class="classes-wrapper">
+                                    <h4 class="center-me">Classes</h4>
                                     <div class="row">
-                                        <div class="bordered col-md-6">
-                                            <p>Class A</p>
-                                            <label for="class-A-symbol">Symbol</label>
-                                            <input id="class-A-symbol" name="class-A-symbol" style="width: 30px;" type="text" value="•"/>
-                                            <br/>
-                                            <label for="class-A-color">Color</label>
-                                            <input id="class-A-color" name="class-A-color" type="color" value="#00ff00"/>
+                                        <div class="col-md-6">
+                                            <p class="center-me">Class A</p>
+                                            <div class="center-me" style="margin: 10px;">
+                                                <label for="class-A-symbol">Symbol</label>
+                                                <input id="class-A-symbol" name="class-A-symbol" style="width: 30px;" type="text" value="•"/>
+                                                <label for="class-A-color">Color</label>
+                                                <input id="class-A-color" name="class-A-color" type="color" value="#00ff00"/>
+                                            </div>
                                         </div>
-                                        <div class="bordered col-md-6">
-                                            <p>Class B</p>
-                                            <label for="class-B-symbol">Symbol</label>
-                                            <input id="class-B-symbol" name="class-B-symbol" style="width: 30px;" type="text" value="•"/>
-                                            <br/>
-                                            <label for="class-B-color">Color</label>
-                                            <input id="class-B-color" name="class-B-color" type="color" value="#ff0000"/>
+                                        <div class="col-md-6">
+                                            <p class="center-me">Class B</p>
+                                            <div class="center-me" style="margin: 10px;">
+                                                <label for="class-B-symbol">Symbol</label>
+                                                <input id="class-B-symbol" name="class-B-symbol" style="width: 30px;" type="text" value="•"/>
+
+                                                <label for="class-B-color">Color</label>
+                                                <input id="class-B-color" name="class-B-color" type="color" value="#ff0000"/>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="bordered col-md-6">
-                                    <p>Data</p>
-                                    <form id="data-input-selection-form">
+                            </div>
+                            <div class="row bordered">
+                                <div class="data-wrapper">
+                                    <h4 class="center-me">Data</h4>
+                                    <form id="data-input-selection-form" class="center-me">
                                         <input type="radio" name="data-input-method" value="preset" checked="checked" onclick="fillDataInputWrapper('preset');"/> Preset
                                         <input type="radio" name="data-input-method" value="manual" onclick="fillDataInputWrapper('manual');"/> Manual
                                         <input type="radio" name="data-input-method" value="file" onclick="fillDataInputWrapper('file');"/> File
+                                        <input type="radio" name="data-input-method" value="random" onclick="fillDataInputWrapper('random');"/> Random<br/>
                                     </form>
-                                    <div id="data-input-wrapper"></div>
+                                    <div id="data-input-wrapper" class="center-me"></div>
                                 </div>
                             </div>
-                            <div class="row">
-                                <div class="bordered col-md-12">
-                                    <p>PLA Prameter</p>
-                                    <label for="maximum-iterations">Maximum Training Iterations</label>
-                                    <input id="maximum-iterations" name="maximum-iterations" type="text" value="100"/>
-                                    <br/>
-                                    <label for="learning-rate">Learning Rate</label>
-                                    <input id="learning-rate" name="learning-rate" type="text" value="0.1"/>
-                                    <br/>
-                                    <label for="theta">Theta</label>
-                                    <input id="theta" name="theta" type="text" value="0"/>
-                                    <br/>
-                                    <label for="speed">Speed</label>
-                                    <input id="speed" name="speed" type="text" value="100"/>
-                                    <br/>
+                            <div class="row bordered">
+                                <div class=" col-md-12">
+                                    <div class="constants-wrapper">
+                                        <h4 class="center-me">Constants</h4>
+                                        <div class="row" style="margin: 10px;">
+                                            <div class="col-md-6 center-me">
+                                                <label for="maximum-iterations">Max Training Iterations</label>
+                                                <input id="maximum-iterations" name="maximum-iterations" type="text" value="1000" style="width: 50px;"/>
+                                                <br/>
+                                                <label for="learning-rate">Learning Rate</label>
+                                                <input id="learning-rate" name="learning-rate" type="text" value="0.1" style="width: 50px;"/>
+                                                <br/>
+                                                <label for="theta">Theta</label>
+                                                <input id="theta" name="theta" type="text" value="0" style="width: 50px;"/>
+                                                <br/>
+                                                <label for="speed">Speed</label>
+                                                <input id="speed" name="speed" type="text" value="100" style="width: 50px;"/>
+                                                <br/>
+                                            </div>
+                                            <div class="col-md-6 center-me">
+                                                <input id="randomize-initial-weights" type="checkbox" onclick="toggleInitialWeightInputs();" checked="checked"><b>Randomize Initial Weights</b><br/>
+                                                <label for="weight-x">Initial Weight X</label>
+                                                <input id="weight-x" name="weight-x" type="text" value="0" disabled="disabled" style="width: 50px;"/>
+                                                <br/>
+                                                <label for="weight-y">Initial Weight Y</label>
+                                                <input id="weight-y" name="weight-y" type="text" value="0" disabled="disabled" style="width: 50px;"/>
+                                                <br/>
+                                                <label for="weight-bias">Initial Weight Bias</label>
+                                                <input id="weight-bias" name="weight-bias" type="text" value="0" disabled="disabled" style="width: 50px;"/>
+                                                <br/>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                            <button id="confirm-data" onclick="loadInputDataIntoPLASimulator(); changeActionButtonText('Run Training Phase')">Choose This Data</button>
+                            <div class="center-me" style="margin: 10px;">
+                                <button class="btn btn-primary max-width" id="confirm-data" onclick="loadInputDataIntoPLASimulator(); changeActionButtonText('Run Training Phase')">Choose This Configuration</button>
+                            </div>
                         </div>
                     </div>
-                    <div class="row">
-                        <div class="bordered col-md-12">
-                            <h4 class="center-me">Details</h4>
-                            <div class="bordered row">
-                                <div class="col-md-6">
+                    <div class="bordered row">
+                        <div class=" col-md-12">
+                            <h3 class="center-me bordered">Details</h3>
+                            <div class=" row center-me">
+                                <div class="col-md-4">
                                     <div class="detail">
                                         <p id="training-iteration-detail-label" class="detail-label">Training Iteration</p>
                                         <p id="training-iteration-detail-value" class="detail-value">0</p>
@@ -126,7 +200,21 @@
                                         <p id="bounding-equation-detail-value" class="detail-value">undefined</p>
                                     </div>
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-md-4">
+                                    <div class="detail">
+                                        <p id="weight-x-detail-label" class="detail-label">Weight X</p>
+                                        <p id="weight-x-detail-value" class="detail-value">0</p>
+                                    </div>
+                                    <div class="detail">
+                                        <p id="weight-y-detail-label" class="detail-label">Weight Y</p>
+                                        <p id="weight-y-detail-value" class="detail-value">0</p>
+                                    </div>
+                                    <div class="detail">
+                                        <p id="weight-bias-detail-label" class="detail-label">Bias Weight</p>
+                                        <p id="weight-bias-detail-value" class="detail-value">0</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
                                     <div class="detail">
                                         <p id="class-A-vectors-detail-label" class="detail-label">Class A Vectors</p>
                                         <p id="class-A-vectors-detail-value" class="detail-value">0</p>
@@ -145,16 +233,17 @@
                     </div>
                 </div>
             </div>
-            <div class="row">
-                <div class="bordered col-md-12">
-                    History
+            <div class="row bordered">
+                <div class=" col-md-12">
+                    <h3 class="center-me bordered">History</h3>
                     <table id="history-table">
                         <tr>
-                            <th>Training Iterations</th>
-                            <th>Testing Iterations</th>
+                            <th>Train Iterations</th>
+                            <th>Test Iterations</th>
                             <th>Bounding Equation</th>
-                            <th>Class A Vectors</th>
-                            <th>Class B Vectors</th>
+                            <th>A Vectors</th>
+                            <th>B Vectors</th>
+                            <th>Initial Weights</th>
                             <th>Data</th>
                         </tr>
                     </table>
